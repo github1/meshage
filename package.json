@@ -1,0 +1,26 @@
+{
+  "name": "meshage",
+  "version": "1.0.0",
+  "description": "Sharded peer based message routing for distributed services",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "author": "github1",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "debug": "^3.0.1",
+    "express": "^4.15.4",
+    "express-http-proxy": "^1.0.6",
+    "gossiper": "0.0.3",
+    "hashring": "^3.2.0",
+    "request": "^2.81.0"
+  },
+  "devDependencies": {
+    "jest": "^20.0.4",
+    "nodemon": "^1.11.0",
+    "portfinder": "^1.0.13"
+  }
+}
