@@ -4,9 +4,6 @@
   "description": "Sharded peer based message routing for distributed services",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
-  "files": [
-    "./dist"
-  ],
   "scripts": {
     "clean": "rimraf coverage dist tmp",
     "build": "tsc -p tsconfig.release.json",
