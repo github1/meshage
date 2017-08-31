@@ -13,9 +13,9 @@ npm install meshage --save
 ```javascript
 const meshage = require('meshage');
 
-new meshage.router.MessageRouter(
+new meshage.MessageRouter(
     8080,
-    new meshage.cluster.GossiperCluster(9742, new meshage.cluster.StaticSeedProvider([]))
+    new meshage.GossiperCluster(9742, new meshage.StaticSeedProvider([]))
 ).start((err, router) => {
     router.register('customers', (command) => {
         return { echo: { command } };
