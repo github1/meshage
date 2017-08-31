@@ -31,7 +31,7 @@ describe('message_router', () => {
                 });
             }
         };
-        it('', () => {
+        it('sends commands to cluster members', () => {
             let routerConn;
             return new Promise((resolve) => {
                 new router.MessageRouter(port, fakeCluster).start((err, conn) => {

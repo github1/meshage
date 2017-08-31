@@ -1,1 +1,10 @@
-node_modules
+*.log
+node_modules/
+coverage
+dist/
+.vscode
+!.vscode/tasks.js
+.idea/
+.npm
+.eslintcache
+.DS_Store
