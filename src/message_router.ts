@@ -130,21 +130,35 @@ export class MessageRouter {
 
         let messageRouterConnection : MessageRouterConnection;
 
-        app.post('/api/:stream/:id', (req : express.Request, res : express.Response) => {
+        const handler : (req : express.Request, res : express.Response) => void = (req : express.Request, res : express.Response) => {
           const stream : string = getParam(req, 'stream');
           const partitionKey : string = getParam(req, 'id');
+          const isBroadcast : boolean = req.path.indexOf('/api/broadcast/') === 0;
           const body : {} = (<{}> req.body);
           const message : Message = Object.assign(body, {
             stream,
             partitionKey
           });
-          messageRouterConnection.send(message).then((result : {}) => {
-            res.json(result);
-          }).catch((err : Error) => {
-            res.status(500);
-            res.json({error: err.message});
-          });
-        });
+          if(isBroadcast) {
+            messageRouterConnection.broadcast(message).then((result : {}) => {
+              res.json(result);
+            }).catch((err : Error) => {
+              res.status(500);
+              res.json({error: err.message});
+            });
+          } else {
+            messageRouterConnection.send(message).then((result : {}) => {
+              res.json(result);
+            }).catch((err : Error) => {
+              res.status(500);
+              res.json({error: err.message});
+            });
+          }
+        };
+
+        app.post('/api/:stream/:id', handler);
+
+        app.post('/api/broadcast/:stream/:id', handler);
 
         const server = app.listen(this.port, () => {
           console.log(`listening on ${this.port}`);
