@@ -42,7 +42,11 @@ export class MessageRouterConnection {
 
   private static PEER_FILTER : (stream : string) => (peer : HostDefinition) => boolean = (stream : string) => {
     return (peer : HostDefinition) => {
-      return peer.services && peer.services.hasOwnProperty(stream);
+      const result : boolean = peer.services && peer.services.hasOwnProperty(stream);
+      if(!result) {
+        log('filtering peer', peer);
+      }
+      return result;
     };
   }
 
