@@ -23,10 +23,14 @@ class GossiperClusterMembership implements ClusterMembership {
 
   private gossiper : Gossiper;
   private self : HostDefinition;
+  private state : {[key:string]:{}} = {};
 
   constructor(gossiper : Gossiper, self : HostDefinition) {
     this.gossiper = gossiper;
     this.self = self;
+    setInterval(() => {
+      this.updateState();
+    }, 1000);
   }
 
   public leave() {
@@ -38,6 +42,7 @@ class GossiperClusterMembership implements ClusterMembership {
       const peerId : string = <string> this.gossiper.peerValue(addr, 'id');
       const peerHost : string = <string> this.gossiper.peerValue(addr, 'host');
       const peerServices : {} = this.gossiper.peerValue(addr, 'services');
+      log('peer', peerId, peerHost, peerServices);
       return {
         id: peerId,
         self: peerId === this.self.id,
@@ -52,7 +57,14 @@ class GossiperClusterMembership implements ClusterMembership {
   }
 
   public setState(key : string, value : {}) {
-    this.gossiper.setLocalState(key, value);
+    this.state[key] = value;
+    this.updateState();
+  }
+
+  public updateState() {
+    Object.keys(this.state).forEach((key : string) => {
+      this.gossiper.setLocalState(key, this.state[key]);
+    });
   }
 }
 
@@ -95,9 +107,10 @@ export class GossiperCluster implements Cluster {
           log('peer_failed', name);
         });
         gossiper.start(() => {
-          gossiper.setLocalState('id', self.id);
-          gossiper.setLocalState('host', self.host);
-          resolve(new GossiperClusterMembership(gossiper, self));
+          const membership : GossiperClusterMembership = new GossiperClusterMembership(gossiper, self);
+          membership.setState('id', self.id);
+          membership.setState('host', self.host);
+          resolve(membership);
         });
       });
     });
