@@ -8,6 +8,9 @@ import * as http from 'http';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as request from 'request';
+import * as debug from 'debug';
+
+const log : debug.IDebugger = debug('meshage');
 
 export type MessageHandler = (message : Message) => {};
 
@@ -55,6 +58,7 @@ export class MessageRouterConnection {
 
   public broadcast(message : Message) : Promise<{}> {
     const peers : HostDefinition[] = this.peerCluster.all().filter(MessageRouterConnection.PEER_FILTER(message.stream));
+    log('broadcasting to peers', peers);
     return Promise.all(peers.map((peer : HostDefinition) => {
       return new Promise((resolve : Function) => {
         this.sendDirect(peer, message).then((value : {}) => {
@@ -140,6 +144,7 @@ export class MessageRouter {
             partitionKey
           });
           if(isBroadcast) {
+            log('broadcasting message', message);
             messageRouterConnection.broadcast(message).then((result : {}) => {
               res.json(result);
             }).catch((err : Error) => {
@@ -147,6 +152,7 @@ export class MessageRouter {
               res.json({error: err.message});
             });
           } else {
+            log('sending message', message);
             messageRouterConnection.send(message).then((result : {}) => {
               res.json(result);
             }).catch((err : Error) => {
