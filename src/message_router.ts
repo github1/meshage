@@ -37,6 +37,12 @@ export class MessageRouterConnection {
     this.server = server;
   }
 
+  private static PEER_FILTER : (stream : string) => (peer : HostDefinition) => boolean = (stream : string) => {
+    return (peer : HostDefinition) => {
+      return peer.services && peer.services.hasOwnProperty(stream);
+    };
+  }
+
   public stop() {
     this.server.close();
   }
@@ -47,38 +53,53 @@ export class MessageRouterConnection {
     this.peerCluster.setState('services', this.serviceState);
   }
 
-  public send(message : Message) : Promise<{}> {
-    const hashring : ClusterHashRing = new ClusterHashRing(this.peerCluster, (peer : HostDefinition) => {
-      return peer.services && peer.services.hasOwnProperty(message.stream);
-    });
-    return hashring.getPeer(message.partitionKey).then((peer : HostDefinition) => {
-      if (peer.self) {
-        if (this.services[message.stream]) {
-          return Promise.resolve(this.services[message.stream](message)).then((res : {[key:string]:string}) => {
-            res.peer = peer.id;
-            return res;
-          });
-        } else {
-          return Promise.reject(new Error(`No service found for stream '${message.stream}' on '${peer.host}'`));
-        }
-      } else {
-        return new Promise((resolve : Function, reject : Function) => {
-          const peerServicePort = peer.services[message.stream];
-          request({
-            url: `http://${peer.host}:${peerServicePort}/api/${message.stream}/${message.partitionKey}`,
-            method: 'post',
-            body: message,
-            json: true,
-            timeout: 1000
-          }, (err : Error, response : {}, body : {}) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(body);
-            }
-          });
+  public broadcast(message : Message) : Promise<{}> {
+    const peers : HostDefinition[] = this.peerCluster.all().filter(MessageRouterConnection.PEER_FILTER(message.stream));
+    return Promise.all(peers.map((peer : HostDefinition) => {
+      return new Promise((resolve : Function) => {
+        this.sendDirect(peer, message).then((value : {}) => {
+          resolve(value);
+        }).catch((err : Error) => {
+          resolve(err);
         });
+      });
+    }));
+  }
+
+  public sendDirect(peer : HostDefinition, message : Message) : Promise<{}> {
+    if (peer.self) {
+      if (this.services[message.stream]) {
+        return Promise.resolve(this.services[message.stream](message)).then((res : {[key:string]:string}) => {
+          res.peer = peer.id;
+          return res;
+        });
+      } else {
+        return Promise.reject(new Error(`No service found for stream '${message.stream}' on '${peer.host}'`));
       }
+    } else {
+      return new Promise((resolve : Function, reject : Function) => {
+        const peerServicePort = peer.services[message.stream];
+        request({
+          url: `http://${peer.host}:${peerServicePort}/api/${message.stream}/${message.partitionKey}`,
+          method: 'post',
+          body: message,
+          json: true,
+          timeout: 1000
+        }, (err : Error, response : {}, body : {}) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        });
+      });
+    }
+  }
+
+  public send(message : Message) : Promise<{}> {
+    const hashring : ClusterHashRing = new ClusterHashRing(this.peerCluster, MessageRouterConnection.PEER_FILTER(message.stream));
+    return hashring.getPeer(message.partitionKey).then((peer : HostDefinition) => {
+      return this.sendDirect(peer, message);
     }).catch((err : Error) => {
       if (ClusterHashRing.ERR_NO_PEERS_FOUND === err.message) {
         throw new Error(`No peers found for stream '${message.stream}'`);
@@ -86,6 +107,7 @@ export class MessageRouterConnection {
       throw err;
     });
   }
+
 }
 
 export class MessageRouter {
