@@ -3,7 +3,7 @@
 import * as debug from 'debug';
 import * as os from 'os';
 import * as request from 'request';
-import { Gossiper } from 'gossiper';
+import { Gossiper } from 'grapevine';
 import * as HashRing from 'hashring';
 
 const log : debug.IDebugger = debug('meshage');
@@ -28,17 +28,16 @@ class GossiperClusterMembership implements ClusterMembership {
   constructor(gossiper : Gossiper, self : HostDefinition) {
     this.gossiper = gossiper;
     this.self = self;
-    setInterval(() => {
-      this.updateState();
-    }, 1000);
   }
 
   public leave() {
-    this.gossiper.stop();
+    this.gossiper.stop(() => {
+      // do nothing
+    });
   }
 
   public peers() : HostDefinition[] {
-    return this.gossiper.livePeers().map((addr : string) => {
+    const peers = this.gossiper.livePeers().map((addr : string) => {
       const peerId : string = <string> this.gossiper.peerValue(addr, 'id');
       const peerHost : string = <string> this.gossiper.peerValue(addr, 'host');
       const peerServices : {} = this.gossiper.peerValue(addr, 'services');
@@ -50,6 +49,13 @@ class GossiperClusterMembership implements ClusterMembership {
         services: peerServices || {}
       };
     }).filter((peer : HostDefinition) => peer.id);
+    peers.unshift(Object.assign({}, {
+      id: this.self.id,
+      self: true,
+      host: this.self.host,
+      services: {}
+    }, this.state));
+    return peers;
   }
 
   public all() : HostDefinition[] {
@@ -89,9 +95,17 @@ export class GossiperCluster implements Cluster {
           return !host.self;
         });
         const isLoopback = /^(127\.0\.0\.1|localhost)$/.test(self.host);
+        /*-
         const gossiper : Gossiper = new Gossiper(self.port || this.port, seeds.map((seed : HostDefinition) => {
           return `${seed.host}:${seed.port || this.port}`;
         }), isLoopback ? self.host : [][1]);
+        */
+        const gossiper : Gossiper = new Gossiper({
+          port: parseInt(self.port, 10) || this.port, seeds: seeds.map((seed : HostDefinition) => {
+            return `${seed.host}:${seed.port || this.port}`;
+          }),
+          address: isLoopback ? self.host : [][1]
+        });
         gossiper.on('update', (name : string, key : string, value : {}) => {
           if (key !== '__heartbeat__') {
             log('update', name, key, value);

@@ -1,6 +1,8 @@
 const cluster = require('../src/cluster');
 const portfinderSync = require('portfinder-sync');
 
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
+
 describe('cluster', () => {
 
   let memberPorts = [];
@@ -15,7 +17,7 @@ describe('cluster', () => {
       memberPorts = ports;
     }).then(() => {
       return Promise.all(memberPorts.map((port) => {
-        const members = memberPorts.map((_port) => {
+        let members = memberPorts.map((_port) => {
           return {
             id: `node-${_port}`,
             host: 'localhost',
@@ -23,13 +25,16 @@ describe('cluster', () => {
             port: _port
           };
         });
+        if(port === Math.min(...memberPorts)) {
+          members = members.filter(member => member.self);
+        }
         return new cluster.GossiperCluster(port, new cluster.StaticPeerProvider(members)).joinCluster();
       })).then((ms) => {
         memberships = memberships.concat(ms);
         let attempts = 0;
         return new Promise((resolve, reject) => {
           const check = () => {
-            if (attempts > 100) {
+            if (attempts > 50) {
               reject(new Error('peers not joined in time'));
             } else {
               if (memberships.map((membership) => membership.peers().length).reduce((a, c) => {
@@ -73,7 +78,7 @@ describe('cluster', () => {
       });
     });
     it('throws an error if no peers found', () => {
-      return new cluster.ClusterHashRing(memberships[0], () => false).getPeer('foo').then((peer) => {
+      return new cluster.ClusterHashRing(memberships[0], () => false).getPeer('foo').then(() => {
         expect(true).toEqual(false);
       }).catch((err) => {
         expect(err.message).toEqual(cluster.ClusterHashRing.ERR_NO_PEERS_FOUND);

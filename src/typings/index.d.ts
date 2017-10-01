@@ -1,4 +1,4 @@
-declare module 'gossiper' {
+declare module 'grapevine' {
   export class Gossiper {
     public on : Function;
     public start : Function;
@@ -7,7 +7,7 @@ declare module 'gossiper' {
     public livePeers : () => string[];
     public peerValue : (peer : string, key : string) => string | {};
 
-    constructor(port : string, peers : {}[], host? : string);
+    constructor(options : any);
   }
 }
 declare class HashRing {
