@@ -94,17 +94,11 @@ export class GossiperCluster implements Cluster {
           }
           return !host.self;
         });
-        const isLoopback = /^(127\.0\.0\.1|localhost)$/.test(self.host);
-        /*-
-        const gossiper : Gossiper = new Gossiper(self.port || this.port, seeds.map((seed : HostDefinition) => {
-          return `${seed.host}:${seed.port || this.port}`;
-        }), isLoopback ? self.host : [][1]);
-        */
         const gossiper : Gossiper = new Gossiper({
           port: parseInt(self.port, 10) || this.port, seeds: seeds.map((seed : HostDefinition) => {
             return `${seed.host}:${seed.port || this.port}`;
           }),
-          address: isLoopback ? self.host : [][1]
+          address: self.host
         });
         gossiper.on('update', (name : string, key : string, value : {}) => {
           if (key !== '__heartbeat__') {
