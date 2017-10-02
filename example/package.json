@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "meshage": "0.0.12"
+    "meshage": "0.0.13"
   }
 }

@@ -3,11 +3,13 @@ services:
   node-a:
     build: ./
     environment:
+      - 'CLUSTER_HOST=node-a'
       - 'LIB=meshage'
       - 'DEBUG=*'
   node-b:
     build: ./
     environment:
+      - 'CLUSTER_HOST=node-b'
       - 'LIB=meshage'
       - 'SEED=node-a:9473'
       - 'DEBUG=*'

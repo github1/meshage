@@ -9,6 +9,14 @@ declare module 'grapevine' {
 
     constructor(options : any);
   }
+  export class ServerAdapter {
+    constructor(options : any);
+    public listen(port : number, address : string);
+  }
+  export class SocketAdapter {
+    constructor(options : any);
+    public connect(port : number, address : string);
+  }
 }
 declare class HashRing {
   constructor(values : string[]);

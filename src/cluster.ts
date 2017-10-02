@@ -3,8 +3,24 @@
 import * as debug from 'debug';
 import * as os from 'os';
 import * as request from 'request';
-import { Gossiper } from 'grapevine';
+import {
+  Gossiper,
+  ServerAdapter,
+  SocketAdapter
+} from 'grapevine';
 import * as HashRing from 'hashring';
+
+/* tslint:disable */
+const serverAdapterListen : (port : number, address : string) => void = ServerAdapter.prototype.listen;
+ServerAdapter.prototype.listen = function (port : number, address : string) {
+  serverAdapterListen.bind(this)(port, '0.0.0.0');
+};
+
+const socketAdapterConnect : (port : number, address : string) => void = SocketAdapter.prototype.connect;
+SocketAdapter.prototype.connect = function (port : number, address : string) {
+  socketAdapterConnect.bind(this)(port, '0.0.0.0');
+};
+/* tslint:enable */
 
 const log : debug.IDebugger = debug('meshage');
 
@@ -103,7 +119,9 @@ export class GossiperCluster implements Cluster {
           port: parseInt(self.port, 10) || this.port, seeds: seeds.map((seed : HostDefinition) => {
             return `${seed.host}:${seed.port || this.port}`;
           }),
-          address: self.host
+          address: self.host,
+          newServerAdapter: () => { return new ServerAdapter({}); },
+          newSocketAdapter: () => { return new SocketAdapter({}); }
         });
         gossiper.on('update', (name : string, key : string, value : {}) => {
           if (key !== '__heartbeat__') {
