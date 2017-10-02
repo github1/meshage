@@ -8,14 +8,14 @@ const clusterSeedPort = process.env.SEED ? process.env.SEED.split(':')[1] : (arg
 const servicePort = parseInt(clusterPort) + 1;
 
 const staticNodes = [{
-    id: `node-${clusterPort}`,
+    id: `node-${clusterHost}-${clusterPort}`,
     self: true,
     host: clusterHost,
     port: clusterPort
 }];
 if(clusterSeedPort) {
     staticNodes.push({
-        id: `node-${clusterSeedPort}`,
+        id: `node-${clusterSeedHost}-${clusterSeedPort}`,
         self: false,
         host: clusterSeedHost,
         port: clusterSeedPort

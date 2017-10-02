@@ -18,7 +18,7 @@ ServerAdapter.prototype.listen = function (port : number, address : string) {
 
 const socketAdapterConnect : (port : number, address : string) => void = SocketAdapter.prototype.connect;
 SocketAdapter.prototype.connect = function (port : number, address : string) {
-  socketAdapterConnect.bind(this)(port, '0.0.0.0');
+  socketAdapterConnect.bind(this)(port, address);
 };
 /* tslint:enable */
 
