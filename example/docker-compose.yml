@@ -1,0 +1,13 @@
+version: '2'
+services:
+  node-a:
+    build: ./
+    environment:
+      - 'LIB=meshage'
+      - 'DEBUG=*'
+  node-b:
+    build: ./
+    environment:
+      - 'LIB=meshage'
+      - 'SEED=node-a:9473'
+      - 'DEBUG=*'

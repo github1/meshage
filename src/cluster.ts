@@ -9,6 +9,7 @@ import * as HashRing from 'hashring';
 const log : debug.IDebugger = debug('meshage');
 
 export interface ClusterMembership {
+  getSelf() : HostDefinition;
   leave();
   peers() : HostDefinition[];
   all() : HostDefinition[];
@@ -30,6 +31,10 @@ class GossiperClusterMembership implements ClusterMembership {
     this.self = self;
   }
 
+  public getSelf() : HostDefinition {
+    return this.self;
+  }
+
   public leave() {
     this.gossiper.stop(() => {
       // do nothing
@@ -41,7 +46,7 @@ class GossiperClusterMembership implements ClusterMembership {
       const peerId : string = <string> this.gossiper.peerValue(addr, 'id');
       const peerHost : string = <string> this.gossiper.peerValue(addr, 'host');
       const peerServices : {} = this.gossiper.peerValue(addr, 'services');
-      log('peer', peerId, peerHost, peerServices);
+      log('peer', this.self.id, peerId, peerHost, peerServices);
       return {
         id: peerId,
         self: peerId === this.self.id,

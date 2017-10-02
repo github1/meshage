@@ -1,10 +1,10 @@
-const meshage = require('../dist/src');
+const meshage = require(process.env.LIB || '../dist/src');
 
 const args = process.argv.slice(2);
 const clusterPort = args[0] || 9473;
-const clusterSeedPort = args[0] ? 9473 : [][1];
+const clusterSeedHost = process.env.SEED ? process.env.SEED.split(':')[0] : 'localhost';
+const clusterSeedPort = process.env.SEED ? process.env.SEED.split(':')[1] : (args[0] ? 9473 : [][1]);
 const servicePort = parseInt(clusterPort) + 1;
-
 
 const staticNodes = [{
     id: `node-${clusterPort}`,
@@ -16,7 +16,7 @@ if(clusterSeedPort) {
     staticNodes.push({
         id: `node-${clusterSeedPort}`,
         self: false,
-        host: 'localhost',
+        host: clusterSeedHost,
         port: clusterSeedPort
     });
 }

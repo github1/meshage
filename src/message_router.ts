@@ -74,21 +74,28 @@ export class MessageRouterConnection {
     }));
   }
 
+  public processLocal(peer : HostDefinition, message : Message) : Promise<{}> {
+    const target : HostDefinition = peer === null ? this.peerCluster.getSelf() : peer;
+    const id : string = target.id;
+    const host : string =  target.host;
+    if (this.services[message.stream]) {
+      return Promise.resolve(this.services[message.stream](message)).then((res : {[key:string]:string}) => {
+        res.peer = id;
+        return res;
+      });
+    } else {
+      return Promise.reject(new Error(`No service found for stream '${message.stream}' on '${host}'`));
+    }
+  }
+
   public sendDirect(peer : HostDefinition, message : Message) : Promise<{}> {
     if (peer.self) {
-      if (this.services[message.stream]) {
-        return Promise.resolve(this.services[message.stream](message)).then((res : {[key:string]:string}) => {
-          res.peer = peer.id;
-          return res;
-        });
-      } else {
-        return Promise.reject(new Error(`No service found for stream '${message.stream}' on '${peer.host}'`));
-      }
+      return this.processLocal(peer, message);
     } else {
       return new Promise((resolve : Function, reject : Function) => {
         const peerServicePort = peer.services[message.stream];
         request({
-          url: `http://${peer.host}:${peerServicePort}/api/${message.stream}/${message.partitionKey}`,
+          url: `http://${peer.host}:${peerServicePort}/api/direct/${message.stream}/${message.partitionKey}`,
           method: 'post',
           body: message,
           json: true,
@@ -142,6 +149,7 @@ export class MessageRouter {
           const stream : string = getParam(req, 'stream');
           const partitionKey : string = getParam(req, 'id');
           const isBroadcast : boolean = req.path.indexOf('/api/broadcast/') === 0;
+          const isDirect : boolean = req.path.indexOf('/api/direct/') === 0;
           const body : {} = (<{}> req.body);
           const message : Message = Object.assign(body, {
             stream,
@@ -150,6 +158,14 @@ export class MessageRouter {
           if(isBroadcast) {
             log('broadcasting message', message);
             messageRouterConnection.broadcast(message).then((result : {}) => {
+              res.json(result);
+            }).catch((err : Error) => {
+              res.status(500);
+              res.json({error: err.message});
+            });
+          } else if (isDirect) {
+            log('processing message', message);
+            messageRouterConnection.processLocal(null, message).then((result : {}) => {
               res.json(result);
             }).catch((err : Error) => {
               res.status(500);
@@ -167,6 +183,8 @@ export class MessageRouter {
         };
 
         app.post('/api/:stream/:id', handler);
+
+        app.post('/api/direct/:stream/:id', handler);
 
         app.post('/api/broadcast/:stream/:id', handler);
 
