@@ -94,8 +94,10 @@ export class MessageRouterConnection {
     } else {
       return new Promise((resolve : Function, reject : Function) => {
         const peerServicePort = peer.services[message.stream];
+        const url = `http://${peer.host}:${peerServicePort}/api/direct/${message.stream}/${message.partitionKey}`;
+        log('sendDirect', url);
         request({
-          url: `http://${peer.host}:${peerServicePort}/api/direct/${message.stream}/${message.partitionKey}`,
+          url: url,
           method: 'post',
           body: message,
           json: true,
