@@ -44,7 +44,7 @@ export class MessageRouterConnection {
     return (peer : HostDefinition) => {
       const result : boolean = peer.services && peer.services.hasOwnProperty(stream);
       if(!result) {
-        log('filtering peer', peer);
+        log(`filtering peer - no service for stream ${stream}`, peer);
       }
       return result;
     };
