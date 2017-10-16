@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Sharded peer based message routing for distributed services",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.release.json",
     "watch": "tsc -w -p tsconfig.release.json",
     "lint": "tslint -t stylish --type-check --exclude '**/*.js' --project 'tsconfig.json'",
+    "prepublishOnly": "npm run build",
     "pretest": "npm run lint",
     "test": "jest",
     "test:watch": "jest --watch"
