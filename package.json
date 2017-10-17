@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Sharded peer based message routing for distributed services",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",

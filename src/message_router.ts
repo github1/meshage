@@ -60,6 +60,12 @@ export class MessageRouterConnection {
     this.peerCluster.setState('services', this.serviceState);
   }
 
+  public unregister(stream : string) {
+    delete this.services[stream];
+    delete this.serviceState[stream];
+    this.peerCluster.setState('services', this.serviceState);
+  }
+
   public broadcast(message : Message) : Promise<{}> {
     const peers : HostDefinition[] = this.peerCluster.all().filter(MessageRouterConnection.PEER_FILTER(message.stream));
     log('broadcasting to peers', peers);
