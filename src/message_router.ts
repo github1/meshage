@@ -26,11 +26,14 @@ export interface Message {
 
 export class MessageRouterConnection {
 
+  public static NO_SERVICE_FOUND_ERR : string = 'E100';
+
   private services : {[key:string]:MessageHandler};
   private serviceState : {[key:string]:string};
   private servicePort : string;
   private peerCluster : ClusterMembership;
   private server : http.Server;
+  private stopUpdates : boolean = false;
 
   constructor(servicePort : string, peerCluster : ClusterMembership, server : http.Server) {
     this.services = {};
@@ -50,20 +53,37 @@ export class MessageRouterConnection {
     };
   }
 
+  public startUpdates() {
+    const update : Function = () => {
+      if(!this.updateServiceState()) {
+        setTimeout(() => {
+          update();
+        }, 1000);
+      }
+    };
+    update();
+  }
+
   public stop() {
+    this.stopUpdates = true;
     this.server.close();
   }
 
   public register(stream : string, handler : MessageHandler) {
     this.services[stream] = handler;
     this.serviceState[stream] = this.servicePort;
-    this.peerCluster.setState('services', this.serviceState);
+    this.updateServiceState();
   }
 
   public unregister(stream : string) {
     delete this.services[stream];
     delete this.serviceState[stream];
+    this.updateServiceState();
+  }
+
+  public updateServiceState() : boolean {
     this.peerCluster.setState('services', this.serviceState);
+    return this.stopUpdates;
   }
 
   public broadcast(message : Message) : Promise<{}> {
@@ -90,7 +110,8 @@ export class MessageRouterConnection {
         return res;
       });
     } else {
-      return Promise.reject(new Error(`No service found for stream '${message.stream}' on '${host}'`));
+      return Promise.reject(
+        new Error(`[${MessageRouterConnection.NO_SERVICE_FOUND_ERR}] No service found for stream '${message.stream}' on '${host}'`));
     }
   }
 
@@ -108,7 +129,7 @@ export class MessageRouterConnection {
           body: message,
           json: true,
           timeout: 1000
-        }, (err : Error, response : {}, body : {}) => {
+        }, (err : Error, response : { statusCode? : number }, body : {}) => {
           if (err) {
             reject(err);
           } else {
@@ -176,7 +197,11 @@ export class MessageRouter {
             messageRouterConnection.processLocal(null, message).then((result : {}) => {
               res.json(result);
             }).catch((err : Error) => {
-              res.status(500);
+              if (err.message.indexOf(`[${MessageRouterConnection.NO_SERVICE_FOUND_ERR}]`) === 0) {
+                res.status(404);
+              } else {
+                res.status(500);
+              }
               res.json({error: err.message});
             });
           } else {
@@ -199,6 +224,7 @@ export class MessageRouter {
         const server = app.listen(this.port, () => {
           console.log(`listening on ${this.port}`);
           callback(null, messageRouterConnection = new MessageRouterConnection(this.port, peerCluster, server));
+          messageRouterConnection.startUpdates();
         });
       });
   }
