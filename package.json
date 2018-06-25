@@ -1,29 +1,31 @@
 {
   "name": "meshage",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Sharded peer based message routing for distributed services",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
     "clean": "rimraf coverage dist tmp",
-    "build": "tsc -p tsconfig.release.json",
     "watch": "tsc -w -p tsconfig.release.json",
     "lint": "tslint -t stylish --type-check --exclude '**/*.js' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build",
     "pretest": "npm run lint",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:watch": "jest --watch --runInBand",
+    "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json"
   },
   "author": "github1",
   "license": "MIT",
   "dependencies": {
+    "@types/uuid": "^3.4.3",
     "body-parser": "^1.17.2",
     "debug": "^3.0.1",
     "express": "^4.15.4",
     "express-http-proxy": "^1.0.6",
     "grapevine": "^1.0.6",
     "hashring": "^3.2.0",
-    "request": "^2.81.0"
+    "superagent": "^3.8.3",
+    "uuid": "^3.2.1"
   },
   "devDependencies": {
     "@types/body-parser": "^1.16.5",
@@ -31,13 +33,15 @@
     "@types/express": "^4.0.37",
     "@types/node": "^8.0.26",
     "@types/request": "^2.0.3",
-    "jest": "^20.0.4",
+    "jest": "^23.1.0",
     "nodemon": "^1.11.0",
     "portfinder-sync": "0.0.2",
+    "portman": "0.0.3",
     "rimraf": "^2.6.1",
+    "ts-jest": "^22.4.6",
     "tslint": "^5.7.0",
     "tslint-microsoft-contrib": "^5.0.1",
     "tsutils": "^2.8.2",
-    "typescript": "^2.4.2"
+    "typescript": "^2.9.2"
   }
 }

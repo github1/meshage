@@ -11,22 +11,22 @@ declare module 'grapevine' {
   }
   export class ServerAdapter {
     constructor(options : any);
+
     public listen(port : number, address : string);
   }
   export class SocketAdapter {
     constructor(options : any);
+
     public connect(port : number, address : string);
   }
 }
-declare class HashRing {
-  constructor(values : string[]);
-
-  // tslint:disable-next-line
-  get(key : string) : string;
-}
-declare module HashRing {
-}
 declare module 'hashring' {
+  class HashRing {
+    constructor(values : string[]);
+
+    // tslint:disable-next-line
+    get(key : string) : string;
+  }
   export = HashRing;
 }
 

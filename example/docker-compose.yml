@@ -5,11 +5,16 @@ services:
     environment:
       - 'CLUSTER_HOST=node-a'
       - 'LIB=meshage'
-      - 'DEBUG=*'
+      - 'DEBUG=none'
+      - 'DELAY_STARTUP_MS=60000'
+    volumes:
+      - '../:/meshage:ro'
   node-b:
     build: ./
     environment:
       - 'CLUSTER_HOST=node-b'
       - 'LIB=meshage'
       - 'SEED=node-a:9473'
-      - 'DEBUG=*'
+      - 'DEBUG=none'
+    volumes:
+      - '../:/meshage:ro'

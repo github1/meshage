@@ -36,6 +36,8 @@
     "no-void-expression": false,
     "align": false,
     "no-floating-promises": false,
+    "no-backbone-get-set-outside-model": false,
+    "no-parameter-properties": false,
     "typedef": [
       true,
       "parameter",

@@ -3,35 +3,26 @@ const meshage = require(process.env.LIB || '../dist/src');
 const args = process.argv.slice(2);
 const clusterHost = process.env.CLUSTER_HOST || 'localhost';
 const clusterPort = args[0] || 9473;
-const clusterSeedHost = process.env.SEED ? process.env.SEED.split(':')[0] : 'localhost';
-const clusterSeedPort = process.env.SEED ? process.env.SEED.split(':')[1] : (args[0] ? 9473 : [][1]);
+const clusterAddress = `${clusterHost}:${clusterPort}`;
 const servicePort = parseInt(clusterPort) + 1;
+const delayStartupMs = process.env.DELAY_STARTUP_MS || 0;
 
-const staticNodes = [{
-    id: `node-${clusterHost}-${clusterPort}`,
-    self: true,
-    host: clusterHost,
-    port: clusterPort
-}];
-if(clusterSeedPort) {
-    staticNodes.push({
-        id: `node-${clusterSeedHost}-${clusterSeedPort}`,
-        self: false,
-        host: clusterSeedHost,
-        port: clusterSeedPort
-    });
+const seeds = [];
+
+if (process.env.SEED) {
+  seeds.push(process.env.SEED);
 }
 
-console.log(staticNodes);
+console.log(`starting on ${clusterAddress} in ${delayStartupMs} ms with ${seeds.length} seed(s) ${seeds}`.trim());
 
-new meshage.MessageRouter(
-    servicePort,
-    new meshage.GossiperCluster(clusterPort, new meshage.StaticPeerProvider(staticNodes))
-).start((err, router) => {
-    router.register('customers', (command) => {
-        return { echo: { command } };
-    });
-});
+setTimeout(() => {
+
+  meshage
+    .init(new meshage.GrapevineCluster(clusterAddress, seeds), servicePort)
+    .register('echo', message => ({echo: message, clusterAddress}))
+    .start();
+
+}, delayStartupMs);
 
 // log unhandled rejections
 process.on('unhandledRejection', error => {

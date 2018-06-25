@@ -1,20 +1,19 @@
 module.exports = {
   verbose: true,
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jestSetup.js'],
   transform: {
-    '.(ts|tsx)': '<rootDir>/preprocessor.js'
+    "^.+\\.ts$": 'ts-jest'
   },
   moduleFileExtensions: [
     'ts',
-    'tsx',
     'js',
-    'jsx',
     'node'
   ],
-  testRegex: '/spec/.*\\.(ts|js)x?$',
+  testRegex: '.*\\.test\\.js$',
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx,js,jsx}',
+    'src/**/*.ts',
     '!src/**/*.d.ts'
   ]
 };
