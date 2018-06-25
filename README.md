@@ -27,14 +27,21 @@ meshage
       return {echoed: message, clusterAddress};
     })
     .start(membership => {
-      
-      // Make calls programmatically
+
+      // Send calls programmatically (via consistent hash)
       membership
         .send({ stream: 'echo', partitionKey: '1123123' })
         .then(response => {
             ...
         });
-      
+
+      // Or send to all nodes registered to a stream
+      membership
+        .broadcast({ stream: 'echo', partitionKey: '1123123' })
+        .then(responses => {
+            ...
+        });
+
     });
 ```
 
@@ -52,10 +59,10 @@ CLUSTER_PORT=9743 SEEDS=127.0.0.1:9742 HTTP_PORT=8081 node index.js
 Send a message to any of the nodes using it's http api:
 
 ```shell
-curl http://localhost:8080/api/echo/$RANDOM -d '{"hello":"world}'
+curl -s http://localhost:8080/api/echo/$RANDOM -H 'Content-Type: application/json' -d '{"hello":"world}'
 ```
 
-The message will be consistently invoked on one of the nodes in the cluster. In this example the message is echoed back:
+The message will be consistently handled by one of the nodes in the cluster.
 
 ```json
 {
@@ -63,9 +70,7 @@ The message will be consistently invoked on one of the nodes in the cluster. In 
     "stream": "echo",
     "partitionKey": "4985",
     "serviceId": "f15cc216-e9a8-4570-a875-233e213081d6",
-    "data": {
-      "hello": "world"
-    }
+    "hello": "world"
   }
 }
 ```

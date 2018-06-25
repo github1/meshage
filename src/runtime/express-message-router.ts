@@ -46,7 +46,7 @@ export class ExpressMessageRouter implements MessageRouter {
             const stream : string = getParam(req, 'stream');
             const partitionKey : string = getParam(req, 'partitionKey');
             const body : {} = <{}> req.body;
-            const message : Message = {stream, partitionKey, data: body};
+            const message : Message = {stream, partitionKey, ...body};
             if (req.get('X-Service-ID')) {
               message.serviceId = req.get('X-Service-ID');
             }
@@ -65,8 +65,8 @@ export class ExpressMessageRouter implements MessageRouter {
               });
           };
 
-        app.post('/api/:stream/:partitionKey', requestHandler);
-        app.post('/api/broadcast/:stream/:partitionKey', requestHandler);
+        app.all('/api/:stream/:partitionKey', requestHandler);
+        app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
         app.listen(this.port, this.host, () => {
           Promise.all(this.handlers.map((handlerRegistration : HandlerRegistration) => {

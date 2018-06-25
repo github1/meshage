@@ -31,7 +31,12 @@ describe('ExpressMessageRouter', () => {
           .then(foundPort => {
             new expressMessageRouter.ExpressMessageRouter(fakeCluster, foundPort)
               .register('test-stream', message => {
-                return [serviceName, message.stream, message.data].join('-');
+                //return [serviceName, message.stream, message.data].join('-');
+                return {
+                  serviceName,
+                  stream: message.stream,
+                  data: message.data
+                };
               })
               .start((err, router) => {
                 routers[serviceName] = router;
@@ -47,14 +52,25 @@ describe('ExpressMessageRouter', () => {
       return routers.a
         .send({stream: 'test-stream', partitionKey: '123', data: 'hi'})
         .then(res => {
-          expect(res).toMatch(/^(a|b)\-test\-stream\-hi$/);
+          expect(res.serviceName).toMatch(/^(a|b)$/);
+          expect(res.data).toBe('hi');
+          expect(res.stream).toBe('test-stream');
         })
     });
     it('broadcasts messages to all nodes', () => {
       return routers.a
         .broadcast({stream: 'test-stream', partitionKey: '123', data: 'hi'})
         .then(res => {
-          expect(res).toEqual(['a-test-stream-hi', 'b-test-stream-hi']);
+          expect(res).toEqual([{
+            'data': 'hi',
+            'serviceName': 'a',
+            'stream': 'test-stream'
+          },
+            {
+              'data': 'hi',
+              'serviceName': 'b',
+              'stream': 'test-stream'
+            }]);
         })
     });
   });
