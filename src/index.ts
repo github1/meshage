@@ -10,6 +10,6 @@ export * from './core/message-router';
 
 export { GrapevineCluster } from './runtime/grapevine-runtime';
 
-export const init = (cluster : Cluster, port : number, host? : string) : MessageRouter => {
-  return new ExpressMessageRouter(cluster, port, host);
+export const init = (cluster : Cluster, address : (string | number)) : MessageRouter => {
+  return new ExpressMessageRouter(cluster, address);
 };

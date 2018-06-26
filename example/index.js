@@ -1,10 +1,10 @@
 const meshage = require(process.env.LIB || '../dist/src');
 
 const args = process.argv.slice(2);
-const clusterHost = process.env.CLUSTER_HOST || 'localhost';
+const clusterHost = process.env.CLUSTER_HOST || '127.0.0.1';
 const clusterPort = args[0] || 9473;
 const clusterAddress = `${clusterHost}:${clusterPort}`;
-const servicePort = parseInt(clusterPort) + 1;
+const serviceAddress = `${clusterHost}:${parseInt(clusterPort) + 1}`;
 const delayStartupMs = process.env.DELAY_STARTUP_MS || 0;
 
 const seeds = [];
@@ -18,7 +18,7 @@ console.log(`starting on ${clusterAddress} in ${delayStartupMs} ms with ${seeds.
 setTimeout(() => {
 
   meshage
-    .init(new meshage.GrapevineCluster(clusterAddress, seeds), servicePort)
+    .init(new meshage.GrapevineCluster(clusterAddress, seeds), serviceAddress)
     .register('echo', message => ({echo: message, clusterAddress}))
     .start();
 

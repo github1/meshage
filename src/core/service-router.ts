@@ -9,6 +9,9 @@ import {
 import { ConnectedMessageRouter } from './message-router';
 import { MessageHandler, Message } from './message';
 import { v4 } from 'uuid';
+import debug = require('debug');
+
+const log : debug.IDebugger = debug('meshage');
 
 export type ServiceInvoker = (message : Message, service : ClusterService) => Promise<{}>;
 
@@ -28,6 +31,7 @@ export class ServiceRouter implements ConnectedMessageRouter {
 
   public register(stream : string, address : string, messageHandler : MessageHandler) : Promise<string> {
     const id : string = v4();
+    log(`Registering handler on stream '${stream}' with address '${address}'`);
     return this.cluster.registerService(id, stream, address)
       .then(() => {
         this.serviceRegistry[id] = {id, stream, address, messageHandler};

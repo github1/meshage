@@ -3,9 +3,13 @@ import { ServiceRouter } from '../core/service-router';
 import { MessageHandler, Message } from '../core/message';
 import { Cluster, ClusterMembership } from '../core/cluster';
 import { httpServiceInvoker } from '../core/http-service-invoker';
+import { parseAddress, Address } from '../core/address-parser';
+import debug = require('debug');
 
 import express = require('express');
 import bodyParser = require('body-parser');
+
+const log : debug.IDebugger = debug('meshage');
 
 type HandlerRegistration = { stream : string, messageHandler : MessageHandler };
 
@@ -21,10 +25,14 @@ const noop : () => void = (() => {
 export class ExpressMessageRouter implements MessageRouter {
 
   private handlers : HandlerRegistration[] = [];
+  private host : string;
+  private port : number;
 
   constructor(private cluster : Cluster,
-              private port : number,
-              private host : string = '127.0.0.1') {
+              address : (string | number)) {
+    const addr : Address = parseAddress(address);
+    this.host = addr.host;
+    this.port = addr.port;
   }
 
   public register(stream : string, messageHandler : MessageHandler) : MessageRouter {
@@ -68,7 +76,8 @@ export class ExpressMessageRouter implements MessageRouter {
         app.all('/api/:stream/:partitionKey', requestHandler);
         app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
-        app.listen(this.port, this.host, () => {
+        app.listen(this.port, () => {
+          log(`Started http service on port ${this.port}`);
           Promise.all(this.handlers.map((handlerRegistration : HandlerRegistration) => {
               return serviceRouter.register(handlerRegistration.stream, `${this.host}:${this.port}`, handlerRegistration.messageHandler);
             }))

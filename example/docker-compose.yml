@@ -1,12 +1,11 @@
-version: '2'
+version: '3'
 services:
   node-a:
     build: ./
     environment:
       - 'CLUSTER_HOST=node-a'
       - 'LIB=meshage'
-      - 'DEBUG=none'
-      - 'DELAY_STARTUP_MS=60000'
+      - 'DEBUG=meshage'
     volumes:
       - '../:/meshage:ro'
   node-b:
@@ -15,6 +14,33 @@ services:
       - 'CLUSTER_HOST=node-b'
       - 'LIB=meshage'
       - 'SEED=node-a:9473'
-      - 'DEBUG=none'
+      - 'DEBUG=meshage'
     volumes:
       - '../:/meshage:ro'
+  node-c:
+      build: ./
+      environment:
+        - 'CLUSTER_HOST=node-c'
+        - 'LIB=meshage'
+        - 'SEED=node-a:9473'
+        - 'DEBUG=meshage'
+      volumes:
+        - '../:/meshage:ro'
+  node-d:
+      build: ./
+      environment:
+        - 'CLUSTER_HOST=node-d'
+        - 'LIB=meshage'
+        - 'SEED=node-a:9473'
+        - 'DEBUG=meshage'
+      volumes:
+        - '../:/meshage:ro'
+  node-e:
+      build: ./
+      environment:
+        - 'CLUSTER_HOST=node-e'
+        - 'LIB=meshage'
+        - 'SEED=node-a:9473'
+        - 'DEBUG=meshage'
+      volumes:
+        - '../:/meshage:ro'
