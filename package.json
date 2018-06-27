@@ -14,7 +14,7 @@
     "test:watch": "jest --watch --runInBand",
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json"
   },
-  "author": "github1",
+  "author": "John Collier <john.collier4@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.17.2",

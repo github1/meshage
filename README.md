@@ -1,6 +1,6 @@
 # meshage
 
-A simple peer-to-peer service mesh for HTTP services. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
+A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
 
 ## Install
 
@@ -16,7 +16,7 @@ Define a service node:
 const meshage = require('meshage');
 meshage
     .init(
-        // Select a cluster implementation
+        // Initialize the cluster to join
         new meshage.GrapevineCluster(
             process.env.CLUSTER_PORT, 
             (process.env.SEEDS || '').split(',')), 
@@ -132,3 +132,83 @@ curl -sX POST http://localhost:8080/api/broadcast/echo/$RANDOM \
  }
 ]
 ```
+
+## JS API
+
+### Init 
+Configure the cluster to join.
+
+**init(cluster : Cluster) : MessageRouter**
+- `cluster` - accepts an instance of `Cluster` which is responsible for advertising and discovering message handler.
+
+```javascript
+const node = meshage.init(cluster);
+```
+
+#### *Provided cluster implementations:*
+
+#### GrapevineCluster
+
+Leverages an implementation of the Gossip protocol to discover nodes and services.
+
+**GrapevineCluster(address : (string | number), seeds : (string | number)[])**
+- `address` - accepts a *host:port* pair (string) or simply a numeric port (number). If only a port is provided, the host defaults to `127.0.0.1`.
+- `seeds` - accepts an array of `address` values (following the same behavior as the *address* argument).
+
+```javascript
+// The initial node in the cluster will not have seeds
+new meshage.GrapevineCluster(9473);
+// Subsequent nodes in the cluster need to specify at least one existing node as a seed
+new meshage.GrapevineCluster(9474, [9473]);
+```
+
+## Register
+
+Registers message handlers on the node.
+
+**register(stream : string, handler : (message : Message) => any) : MessageRouter**
+- `stream` - the stream name to accept messages for.
+- `handler` - accepts a message handler function.
+
+```javascript
+node.register('someStream', message => {
+    return {};
+});
+```
+
+## Start
+
+Joins the cluster and begins advertising the nodes message handlers.
+
+**start(callback : (router : ConnectedMessageRouter) => void)**
+- `callback` - accepts a function which is invoked once the node joins the cluster.  The callback function is provided a router instance which can be used to send or broadcast messages.
+
+```javascript
+node.start(router => {
+   router
+    .send({ stream: 'echo', partitionKey: 'c6c5e7f3-6228-41ce-a7ea-23ac24a08a32', data: 'hello' })
+    .then(res => {
+      console.log(res);
+    });  
+});
+```
+
+The `router` instanced passed to  type exposes two methods:
+ 
+### Send
+
+Sends a message to be handled consistently by a registered handler for the specified stream. Depending on how the message is routed, it could be handled by the node itself.
+
+**send(message : Message) : Promise<{}>**
+- `message` - the message to send
+
+### Broadcast
+
+Sends a message to all registered handlers for the specified stream.
+
+**broadcast(message : Message) : Promise<{}>**
+- `message` - the message to send
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
