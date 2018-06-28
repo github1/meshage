@@ -9,7 +9,7 @@ import {
   Gossiper,
   ServerAdapter,
   SocketAdapter
-} from 'grapevine';
+} from '@github1/grapevine';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');

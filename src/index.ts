@@ -8,7 +8,8 @@ export { Cluster } from './core/cluster';
 
 export * from './core/message-router';
 
-export { GrapevineCluster } from './runtime/grapevine-runtime';
+export * from './runtime/grapevine-runtime';
+export * from './runtime/consul-runtime';
 
 export const init = (cluster : Cluster, address : (string | number)) : MessageRouter => {
   return new ExpressMessageRouter(cluster, address);

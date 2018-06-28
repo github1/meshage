@@ -1,30 +1,37 @@
-const meshage = require(process.env.LIB || '../dist/src');
+const meshage = require(process.env.LIB || '../../dist/src');
+const os = require('os');
 
-const args = process.argv.slice(2);
-const clusterHost = process.env.CLUSTER_HOST || '127.0.0.1';
-const clusterPort = args[0] || 9473;
+const serviceHost = process.env.SERVICE_HOST || os.hostname();
+const servicePort = process.env.SERVICE_PORT || 8080;
+const serviceAddress = `${serviceHost}:${servicePort}`;
+
+const clusterType = process.env.CLUSTER_TYPE;
+const clusterHost = process.env.CLUSTER_HOST || serviceHost;
+const clusterPort = process.env.CLUSTER_PORT || parseInt(servicePort, 10) - 1;
 const clusterAddress = `${clusterHost}:${clusterPort}`;
-const serviceAddress = `${clusterHost}:${parseInt(clusterPort) + 1}`;
+
 const delayStartupMs = process.env.DELAY_STARTUP_MS || 0;
 
-const seeds = [];
-
-if (process.env.SEED) {
-  seeds.push(process.env.SEED);
-}
+const seeds = process.env.SEED ? process.env.SEED.split(/,/) : [];
 
 console.log(`starting on ${clusterAddress} in ${delayStartupMs} ms with ${seeds.length} seed(s) ${seeds}`.trim());
 
 setTimeout(() => {
 
+  let cluster;
+  if (clusterType === 'consul') {
+    cluster = new meshage.ConsulCluster(clusterAddress, seeds);
+  } else {
+    cluster = new meshage.GrapevineCluster(clusterAddress, seeds);
+  }
+
   meshage
-    .init(new meshage.GrapevineCluster(clusterAddress, seeds), serviceAddress)
+    .init(cluster, serviceAddress)
     .register('echo', message => ({echo: message, clusterAddress}))
     .start();
 
 }, delayStartupMs);
 
-// log unhandled rejections
 process.on('unhandledRejection', error => {
   console.log('unhandledRejection', error);
 });
