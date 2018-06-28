@@ -4,6 +4,7 @@ services:
     build: ./
     environment:
       - 'CLUSTER_HOST=node-a'
+      - 'CLUSTER_PORT=9374'
       - 'LIB=meshage'
       - 'DEBUG=meshage'
     volumes:
@@ -13,7 +14,7 @@ services:
     environment:
       - 'CLUSTER_HOST=node-b'
       - 'LIB=meshage'
-      - 'SEED=node-a:9473'
+      - 'SEED=node-a:9374'
       - 'DEBUG=meshage'
     volumes:
       - '../:/meshage:ro'

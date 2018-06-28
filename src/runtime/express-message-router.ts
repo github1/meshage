@@ -73,6 +73,9 @@ export class ExpressMessageRouter implements MessageRouter {
               });
           };
 
+        app.all('/api/health', (req : express.Request, res : express.Response) => {
+          res.send({status: 'up'});
+        });
         app.all('/api/:stream/:partitionKey', requestHandler);
         app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 

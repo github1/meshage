@@ -10,24 +10,26 @@
     "lint": "tslint -t stylish --type-check --exclude '**/*.js' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build",
     "pretest": "npm run lint",
-    "test": "jest --runInBand --detectOpenHandles",
+    "test": "jest --runInBand --coverage",
     "test:watch": "jest --watch --runInBand",
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json"
   },
   "author": "John Collier <john.collier4@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@github1/grapevine": "^1.0.6",
     "body-parser": "^1.17.2",
+    "consul": "^0.33.1",
     "debug": "^3.0.1",
     "express": "^4.15.4",
     "express-http-proxy": "^1.0.6",
-    "grapevine": "^1.0.6",
     "hashring": "^3.2.0",
     "superagent": "^3.8.3",
     "uuid": "^3.2.1"
   },
   "devDependencies": {
     "@types/body-parser": "^1.16.5",
+    "@types/consul": "^0.23.32",
     "@types/debug": "0.0.30",
     "@types/express": "^4.0.37",
     "@types/node": "^8.0.26",

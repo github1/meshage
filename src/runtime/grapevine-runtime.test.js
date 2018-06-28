@@ -10,25 +10,34 @@ describe('grapevineRuntime', () => {
       .map(nodeName => {
         return () => new Promise(resolve => {
           getPort().then(foundPort => {
-              const node = {
-                name: nodeName,
-                port: foundPort,
-                address: `127.0.0.1:${foundPort}`
-              };
-              const joinedNodes = Object.keys(nodes)
-                .map(nodeName => nodes[nodeName])
-                .filter(node => node)
-                .map(node => node.address);
-              node.cluster = new grapevineRuntime.GrapevineCluster(node.address, joinedNodes);
-              nodes[nodeName] = node;
-              node.cluster.joinCluster()
-                .then(membership => {
-                  nodes[nodeName].membership = membership;
-                  resolve();
-                });
-            });
+            const node = {
+              name: nodeName,
+              port: foundPort,
+              address: `127.0.0.1:${foundPort}`
+            };
+            const joinedNodes = Object.keys(nodes)
+              .map(nodeName => nodes[nodeName])
+              .filter(node => node)
+              .map(node => node.address);
+            node.cluster = new grapevineRuntime.GrapevineCluster(node.address, joinedNodes);
+            node.name = nodeName;
+            nodes[nodeName] = node;
+            node.cluster.joinCluster()
+              .then(membership => {
+                nodes[nodeName].membership = membership;
+                resolve();
+              });
+          });
         });
       }));
+  });
+
+  afterEach(() => {
+    return Promise.all(Object.keys(nodes)
+      .map(nodeName => nodes[nodeName])
+      .map(node => new Promise(resolve => {
+        node.membership ? node.membership.gossiper.stop(() => resolve(node.name)) : resolve();
+      })));
   });
 
   describe('service registration', () => {

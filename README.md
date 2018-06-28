@@ -145,7 +145,7 @@ Configure the cluster to join.
 const node = meshage.init(cluster);
 ```
 
-#### *Provided cluster implementations:*
+#### *Cluster Implementations:*
 
 #### GrapevineCluster
 
@@ -161,6 +161,25 @@ new meshage.GrapevineCluster(9473);
 // Subsequent nodes in the cluster need to specify at least one existing node as a seed
 new meshage.GrapevineCluster(9474, [9473]);
 ```
+
+#### ConsulCluster
+
+Connects to a consul agent/cluster for service registration.
+
+**ConsulCluster(address : (string | number), seeds : (string | number)[])**
+- `address` - accepts a *host:port* pair (string) or simply a numeric port (number). *The cluster address should point to the associated consul agents HTTP API (typically port 8500)*.
+- `seeds` - accepts an array of `address` values (following the same behavior as the *address* argument). *The seed address should be point to a consul agents serf_lan port (typically port 8301)*.
+
+```javascript
+// The initial node in the cluster will not have seeds
+new meshage.GrapevineCluster(9473);
+// Subsequent nodes in the cluster need to specify at least one existing node as a seed
+new meshage.GrapevineCluster(9474, [9473]);
+```
+
+#### Custom Implementations
+
+Custom cluster types may be provided by implementing the `core/cluster/Cluster` interface.
 
 ## Register
 

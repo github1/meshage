@@ -1,4 +1,4 @@
-declare module 'grapevine' {
+declare module '@github1/grapevine' {
   export class Gossiper {
     public on : Function;
     public start : Function;

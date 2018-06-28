@@ -1,5 +1,7 @@
 const portfinder = require('portfinder-sync');
 
+let lastPort = 9999;
+
 global.testLog = (...message) => {
   try {
     message = JSON.stringify(message, null, 2);
@@ -10,7 +12,8 @@ global.testLog = (...message) => {
 };
 
 global.getPort = () => {
-  return Promise.resolve(portfinder.getPort(9999));
+  lastPort = portfinder.getPort(lastPort + 1);
+  return Promise.resolve(lastPort);
 };
 
 global.promiseSerial = funcs =>
