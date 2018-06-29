@@ -6,6 +6,7 @@ describe('httpServiceInvoker', () => {
   let app;
   let port;
   let handlerSpy;
+  let server;
   beforeEach(() => {
     handlerSpy = jest.fn();
     return new Promise(resolve => {
@@ -17,11 +18,14 @@ describe('httpServiceInvoker', () => {
       });
       getPort().then(foundPort => {
         port = foundPort;
-        app.listen(port, () => {
+        server = app.listen(port, () => {
           resolve();
         });
       });
     });
+  });
+  afterEach(() => {
+    server.close();
   });
   it('sends http requests', () => {
     return httpServiceInoker.httpServiceInvoker()({

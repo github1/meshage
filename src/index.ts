@@ -11,6 +11,6 @@ export * from './core/message-router';
 export * from './runtime/grapevine-runtime';
 export * from './runtime/consul-runtime';
 
-export const init = (cluster : Cluster, address : (string | number)) : MessageRouter => {
-  return new ExpressMessageRouter(cluster, address);
+export const init = (cluster : Cluster, address? : (string | number)) : MessageRouter => {
+  return new ExpressMessageRouter(cluster, address ? address : 8080);
 };

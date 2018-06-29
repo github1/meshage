@@ -21,3 +21,24 @@ global.promiseSerial = funcs =>
       promise.then(result => func().then(Array.prototype.concat.bind(result))),
     Promise.resolve([]));
 
+global.delayUntil = (func, opts) => {
+  opts = opts || {};
+  let interval = opts.interval || 1000;
+  let attempts = opts.attempts || 10;
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      let result = func();
+      if(result) {
+        resolve(result);
+      } else {
+        if(attempts-- > 0) {
+          setTimeout(() => check(), interval);
+        } else {
+          reject(new Error('timeout'));
+        }
+      }
+    };
+    check();
+  });
+};
+

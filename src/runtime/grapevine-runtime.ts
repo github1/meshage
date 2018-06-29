@@ -20,12 +20,27 @@ export class GrapevineClusterMembership implements ClusterMembership {
 
   constructor(gossiper : Gossiper) {
     this.gossiper = gossiper;
+    gossiper.on('update', (name : string, key : string, value : {}) => {
+      if (key !== '__heartbeat__') {
+        log('update', name, key, value);
+      }
+    });
+    gossiper.on('new_peer', (name : string) => {
+      log('new_peer', name);
+    });
+    gossiper.on('peer_alive', (name : string) => {
+      log('peer_alive', name);
+    });
+    gossiper.on('peer_failed', (name : string) => {
+      log('peer_failed', name);
+    });
   }
 
   public services(filter? : ClusterServiceFilter) : Promise<ClusterService[]> {
     let allServices : ClusterService[] = [];
     const includeServices = (services : {}) => {
       if (services) {
+        // merge 'local' service state
         const toInclude : ClusterService[] = Object
           .keys(services)
           .map((key : string) : ClusterService => <ClusterService> services[key]);
@@ -38,6 +53,7 @@ export class GrapevineClusterMembership implements ClusterMembership {
     };
     this.gossiper.livePeers().forEach((addr : string) => {
       const services : {} = this.gossiper.peerValue(addr, 'services');
+      // merge services from live peers
       includeServices(services);
     });
     includeServices(this.state.services);
@@ -55,6 +71,7 @@ export class GrapevineClusterMembership implements ClusterMembership {
   }
 
   public unregisterService(id : string) : Promise<void> {
+    this.state.services = this.state.services || {};
     delete this.state.services[id];
     this.updateState();
     return Promise.resolve();
@@ -90,20 +107,6 @@ export class GrapevineCluster implements Cluster {
         newSocketAdapter: () => {
           return new SocketAdapter({});
         }
-      });
-      gossiper.on('update', (name : string, key : string, value : {}) => {
-        if (key !== '__heartbeat__') {
-          log('update', name, key, value);
-        }
-      });
-      gossiper.on('new_peer', (name : string) => {
-        log('new_peer', name);
-      });
-      gossiper.on('peer_alive', (name : string) => {
-        log('peer_alive', name);
-      });
-      gossiper.on('peer_failed', (name : string) => {
-        log('peer_failed', name);
       });
       gossiper.start(() => {
         const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);

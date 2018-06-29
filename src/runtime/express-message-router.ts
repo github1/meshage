@@ -27,6 +27,7 @@ export class ExpressMessageRouter implements MessageRouter {
   private handlers : HandlerRegistration[] = [];
   private host : string;
   private port : number;
+  private server : { close() : void };
 
   constructor(private cluster : Cluster,
               address : (string | number)) {
@@ -79,7 +80,7 @@ export class ExpressMessageRouter implements MessageRouter {
         app.all('/api/:stream/:partitionKey', requestHandler);
         app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
-        app.listen(this.port, () => {
+        this.server = app.listen(this.port, () => {
           log(`Started http service on port ${this.port}`);
           Promise.all(this.handlers.map((handlerRegistration : HandlerRegistration) => {
               return serviceRouter.register(handlerRegistration.stream, `${this.host}:${this.port}`, handlerRegistration.messageHandler);
@@ -92,5 +93,9 @@ export class ExpressMessageRouter implements MessageRouter {
             });
         });
       });
+  }
+
+  public stop() {
+    this.server.close();
   }
 }

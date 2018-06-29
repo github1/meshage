@@ -3,9 +3,11 @@ const grapevineRuntime = require('./grapevine-runtime');
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
 describe('grapevineRuntime', () => {
-  let nodes = {};
+  let nodes;
+  let aggregateState = {};
 
   beforeEach(() => {
+    nodes = {};
     return promiseSerial(['a', 'b']
       .map(nodeName => {
         return () => new Promise(resolve => {
@@ -25,6 +27,12 @@ describe('grapevineRuntime', () => {
             node.cluster.joinCluster()
               .then(membership => {
                 nodes[nodeName].membership = membership;
+                // listen for gossiper message updates
+                nodes[nodeName].membership.gossiper.on('update', (name, key, value) => {
+                  if (key !== '__heartbeat__') {
+                    aggregateState[key] = Object.assign({}, aggregateState[key] || {}, value);
+                  }
+                });
                 resolve();
               });
           });
@@ -40,39 +48,45 @@ describe('grapevineRuntime', () => {
       })));
   });
 
+  it('a', () => {
+  });
+
   describe('service registration', () => {
     beforeEach(() => {
-      nodes.a.membership.registerService('node-a-svc-1', 'test-stream', 'anAddress');
-      nodes.b.membership.registerService('node-b-svc-1', 'test-stream', 'anAddress');
+      return Promise.all([
+        nodes.a.membership.registerService('node-a-svc-1', 'test-stream', 'anAddress'),
+        nodes.b.membership.registerService('node-b-svc-1', 'test-stream', 'anAddress')
+      ]).then(() => delayUntil(() => {
+        return aggregateState.services
+          && aggregateState.services['node-a-svc-1']
+          && aggregateState.services['node-b-svc-1']
+          && nodes.a.membership.gossiper.livePeers().length === 1
+          && nodes.b.membership.gossiper.livePeers().length === 1
+      }));
     });
     it('node-a can see node-b\'s services', () => {
-      return getServices(nodes.a.membership, 1).then(services => {
+      return nodes.a.membership.services().then(services => {
         expect(services.length).toBe(2);
+        expect(services.filter(service => service.id === 'node-a-svc-1')[0].stream).toBe('test-stream');
         expect(services.filter(service => service.id === 'node-b-svc-1')[0].stream).toBe('test-stream');
       });
     });
     it('node-b can see node-a\'s services', () => {
-      return getServices(nodes.b.membership, 1).then(services => {
+      return nodes.b.membership.services().then(services => {
         expect(services.length).toBe(2);
         expect(services.filter(service => service.id === 'node-a-svc-1')[0].stream).toBe('test-stream');
+        expect(services.filter(service => service.id === 'node-b-svc-1')[0].stream).toBe('test-stream');
       });
+    });
+    it('unregisters services', () => {
+      return nodes.b.membership.unregisterService('node-b-svc-1')
+        .then(() => {
+          return nodes.b.membership.services().then(services => {
+            expect(services.length).toBe(1);
+            expect(services.filter(service => service.id === 'node-a-svc-1')[0].stream).toBe('test-stream');
+          });
+        });
     });
   });
 
 });
-
-
-const getServices = (membership, threshold = 0) => {
-  return new Promise(resolve => {
-    const check = () => {
-      membership.services().then(services => {
-        if (services.length > threshold) {
-          resolve(services);
-        } else {
-          setTimeout(() => check(), 1);
-        }
-      });
-    };
-    check();
-  });
-};

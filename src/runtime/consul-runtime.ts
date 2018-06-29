@@ -90,7 +90,16 @@ export class ConsulClusterMembership implements ClusterMembership {
   }
 
   public unregisterService(id : string) : Promise<void> {
-    return Promise.reject(new Error('Not implemented yet'));
+    return new Promise((resolve : () => void, reject : (err : Error) => void) => {
+      this.consulClient.agent.service.deregister({id}, (err : Error) => {
+        if (err) {
+          log(err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
 }

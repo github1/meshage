@@ -25,27 +25,32 @@ describe('ExpressMessageRouter', () => {
       joinCluster: () => Promise.resolve(fakeClusterMembership)
     };
 
-    return promiseSerial(['a', 'b'].map(serviceName => {
-      return () => new Promise(resolve => {
+    return Promise.all(['a', 'b'].map(serviceName => {
+      return new Promise(resolve => {
         getPort()
           .then(foundPort => {
-            new expressMessageRouter.ExpressMessageRouter(fakeCluster, foundPort)
+            const msgRouter = new expressMessageRouter.ExpressMessageRouter(fakeCluster, foundPort)
               .register('test-stream', message => {
-                //return [serviceName, message.stream, message.data].join('-');
                 return {
                   serviceName,
                   stream: message.stream,
                   data: message.data
                 };
-              })
-              .start((err, router) => {
-                routers[serviceName] = router;
-                resolve();
               });
+            msgRouter.start((err, router) => {
+              routers[serviceName] = router;
+              routers[serviceName].msgRouter = msgRouter;
+              resolve();
+            });
           });
       });
     }));
 
+  });
+  afterEach(() => {
+    Object.keys(routers)
+      .map(key => routers[key])
+      .forEach(router => router.msgRouter.stop());
   });
   describe('when a message is sent', () => {
     it('sends the message to a node', () => {

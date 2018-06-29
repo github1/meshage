@@ -156,5 +156,40 @@ describe('consulRuntime', () => {
           });
       });
     });
+    describe('unregistering services', () => {
+      it('unregisters services', () => {
+        const mockConsulClient = {
+          agent: {
+            service: {
+              deregister: jest.fn((service, callback) => {
+                callback();
+              })
+            }
+          }
+        };
+        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+          .unregisterService('1234')
+          .then(() => {
+            expect(mockConsulClient.agent.service.deregister).toHaveBeenCalled();
+          });
+      });
+      it('rejects when service unregistration fails', () => {
+        const mockConsulClient = {
+          agent: {
+            service: {
+              deregister: jest.fn((service, callback) => {
+                callback(new Error('failed'));
+              })
+            }
+          }
+        };
+        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+          .unregisterService('1234')
+          .catch(err => err)
+          .then(res => {
+            expect(res instanceof Error).toBe(true);
+          });
+      });
+    });
   });
 });

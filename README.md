@@ -208,7 +208,7 @@ node.start(router => {
     .send({ stream: 'echo', partitionKey: 'c6c5e7f3-6228-41ce-a7ea-23ac24a08a32', data: 'hello' })
     .then(res => {
       console.log(res);
-    });  
+    });
 });
 ```
 
