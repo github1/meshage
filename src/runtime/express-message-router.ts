@@ -1,4 +1,4 @@
-import { MessageRouter, MessageRouterStartHandler } from '../core/message-router';
+import { ConnectedMessageRouter, DefaultConnectedMessageRouter, MessageRouter, MessageRouterStartHandler } from '../core/message-router';
 import { ServiceRouter } from '../core/service-router';
 import { MessageHandler, Message } from '../core/message';
 import { Cluster, ClusterMembership } from '../core/cluster';
@@ -82,11 +82,13 @@ export class ExpressMessageRouter implements MessageRouter {
 
         this.server = app.listen(this.port, () => {
           log(`Started http service on port ${this.port}`);
+          const connectedMessageRouter : ConnectedMessageRouter =
+            new DefaultConnectedMessageRouter(`${this.host}:${this.port}`, serviceRouter);
           Promise.all(this.handlers.map((handlerRegistration : HandlerRegistration) => {
-              return serviceRouter.register(handlerRegistration.stream, `${this.host}:${this.port}`, handlerRegistration.messageHandler);
+              return connectedMessageRouter.register(handlerRegistration.stream, handlerRegistration.messageHandler);
             }))
             .then(() => {
-              handler(null, serviceRouter);
+              handler(null, connectedMessageRouter);
             })
             .catch((err : Error) => {
               handler(err);

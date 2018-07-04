@@ -6,7 +6,6 @@ import {
   selectByStream,
   composeSelect
 } from './cluster';
-import { ConnectedMessageRouter } from './message-router';
 import { MessageHandler, Message } from './message';
 import { v4 } from 'uuid';
 import debug = require('debug');
@@ -18,7 +17,7 @@ export type ServiceInvoker = (message : Message, service : ClusterService) => Pr
 type ServiceRegistration = { id : string, stream : string, address : string, messageHandler : MessageHandler };
 type ServiceRegistry = { [id : string] : ServiceRegistration };
 
-export class ServiceRouter implements ConnectedMessageRouter {
+export class ServiceRouter {
   private cluster : ClusterMembership;
   private serviceInvoker : ServiceInvoker;
   private serviceRegistry : ServiceRegistry;
