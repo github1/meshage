@@ -4,7 +4,7 @@ import {
   ClusterService,
   ClusterServiceFilter
 } from '../core/cluster';
-import { parseAddress } from '../core/address-parser';
+import { Address, parseAddress, parseAddresses } from '../core/address-parser';
 import {
   Gossiper,
   ServerAdapter,
@@ -91,9 +91,8 @@ export class GrapevineCluster implements Cluster {
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.address = parseAddress(address).toString();
-    this.seeds = seeds
-      .filter((seed : (string | number)) => `${seed}`.trim().length > 0)
-      .map((seed : (string | number)) => parseAddress(seed).toString());
+    this.seeds = parseAddresses(seeds)
+      .map((address: Address) => address.toString());
   }
 
   public joinCluster() : Promise<ClusterMembership> {

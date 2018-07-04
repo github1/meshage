@@ -16,3 +16,9 @@ export const parseAddress = (value : (string | number)) : Address => {
   const port : number = parseInt(portString, 10);
   return new Address(host, isNaN(port) ? 80 : port);
 };
+
+export const parseAddresses = (value : (string | number)[]) : Address[] => {
+  return value
+    .filter((address: (string | number)) => `${address}`.trim().length > 0)
+    .map(parseAddress);
+};

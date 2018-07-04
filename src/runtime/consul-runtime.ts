@@ -5,7 +5,7 @@ import {
   ClusterServiceFilter
 } from '../core/cluster';
 import consul = require('consul');
-import { Address, parseAddress } from '../core/address-parser';
+import { Address, parseAddress, parseAddresses } from '../core/address-parser';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
@@ -112,7 +112,7 @@ export class ConsulCluster implements Cluster {
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.address = parseAddress(address);
-    this.seeds = seeds.map(parseAddress);
+    this.seeds = parseAddresses(seeds);
   }
 
   public joinCluster() : Promise<ClusterMembership> {
