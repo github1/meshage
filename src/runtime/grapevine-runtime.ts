@@ -91,7 +91,9 @@ export class GrapevineCluster implements Cluster {
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.address = parseAddress(address).toString();
-    this.seeds = seeds.map((seed : (string | number)) => parseAddress(seed).toString());
+    this.seeds = seeds
+      .filter((seed : (string | number)) => `${seed}`.trim().length > 0)
+      .map((seed : (string | number)) => parseAddress(seed).toString());
   }
 
   public joinCluster() : Promise<ClusterMembership> {
