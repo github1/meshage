@@ -1,4 +1,5 @@
 const consulRuntime = require('./consul-runtime');
+const os = require('os');
 
 describe('consulRuntime', () => {
   describe('ConsulCluster', () => {
@@ -28,7 +29,7 @@ describe('consulRuntime', () => {
           .joinCluster()
           .then((membership) => {
             expect(membership.consulClient).toBe(mockConsulClient);
-            expect(mockConsulClient.agent.join.mock.calls[0][0].address).toBe('127.0.0.1:2234');
+            expect(mockConsulClient.agent.join.mock.calls[0][0].address).toBe(`${os.hostname()}:2234`);
           });
       });
       it('rejects if unable to join the seed', () => {

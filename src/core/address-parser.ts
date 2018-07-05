@@ -1,3 +1,5 @@
+import os = require('os');
+
 export class Address {
   constructor(public host : string, public port : number) {
   }
@@ -7,7 +9,7 @@ export class Address {
 }
 
 export const parseAddress = (value : (string | number)) : Address => {
-  let host : string = '127.0.0.1';
+  let host : string = os.hostname();
   let portString : string = `${value}`;
   if (portString.indexOf(':') > -1) {
     host = portString.split(':')[0];
