@@ -92,7 +92,7 @@ export class GrapevineCluster implements Cluster {
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.address = parseAddress(address).toString();
     this.seeds = parseAddresses(seeds)
-      .map((address: Address) => address.toString());
+      .map((address : Address) => address.toString());
   }
 
   public joinCluster() : Promise<ClusterMembership> {
@@ -110,6 +110,10 @@ export class GrapevineCluster implements Cluster {
         }
       });
       gossiper.start(() => {
+        // Ensures that updates from a restarted peer are accepted by the cluster
+        // by guaranteeing the initial state version is greater than what was
+        // presented in prior (pre-restart) reconciliation attempts.
+        gossiper.my_state.max_version_seen = new Date().getTime();
         const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
         resolve(membership);
       });

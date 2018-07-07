@@ -6,6 +6,7 @@ declare module '@github1/grapevine' {
     public setLocalState : Function;
     public livePeers : () => string[];
     public peerValue : (peer : string, key : string) => string | {};
+    public my_state : {max_version_seen : number};
 
     constructor(options : any);
   }
