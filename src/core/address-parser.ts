@@ -1,10 +1,10 @@
 import os = require('os');
 
 export class Address {
-  constructor(public host : string, public port : number) {
+  constructor(public host : string, public port : number, public portString : string) {
   }
   public toString() : string {
-    return `${this.host}:${this.port}`;
+    return `${this.host}:${this.portString}`;
   }
 }
 
@@ -16,7 +16,7 @@ export const parseAddress = (value : (string | number)) : Address => {
     portString = portString.split(':')[1];
   }
   const port : number = parseInt(portString, 10);
-  return new Address(host, isNaN(port) ? 80 : port);
+  return new Address(host, isNaN(port) ? 80 : port, portString);
 };
 
 export const parseAddresses = (value : (string | number)[]) : Address[] => {

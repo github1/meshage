@@ -198,7 +198,7 @@ node.register('someStream', message => {
 Joins the cluster and begins advertising the nodes message handlers.
 
 **start(callback : (router : ConnectedMessageRouter) => void)**
-- `callback` - accepts a function which is invoked once the node joins the cluster.  The callback function is provided a router instance which can be used to send or broadcast messages.
+- `callback` - (optional) accepts a callback function which is provided a router instance. The router instance can be used to send or broadcast messages to nodes in the cluster.
 
 ```javascript
 node.start(router => {
@@ -225,6 +225,37 @@ Sends a message to all registered handlers for the specified stream.
 
 **broadcast(message : Message) : Promise<{}>**
 - `message` - the message to send
+
+## Address Formats
+
+Address may be supplied in the following formats:
+
+### Host port string
+
+The host and port conjoined by a colon.
+
+_Example_
+
+`localhost:8080`
+
+### Port number
+
+Just the port (as a number or string). If no explicit hostname is provided, `os.hostname()` is used to determine the host.
+
+_Example_
+
+`8080`
+
+### Finding open ports
+
+By suffixing the address with the keyword `find`, the library will attempt to find an open port to listen on.
+
+_Example_
+
+- `localhost:find` - use localhost, but find an open port
+- `localhost:8080/find` - use localhost and port 8080 if available, otherwise find an open port
+- `8080/find` - use port 8080 if available, otherwise find an open port
+- `find` - find any open port
 
 ## License
 

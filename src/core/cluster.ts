@@ -40,7 +40,7 @@ export const selectByHashRing = (key : string) : ClusterServiceFilter => {
       return mapping;
     }, {});
     const hashRing : HashRing = new HashRing(Object.keys(mapping));
-    const found : ClusterService = <ClusterService> mapping[hashRing.get(key)];
+    const found : ClusterService = mapping[hashRing.get(key)];
     return found ? [found] : [];
   };
 };

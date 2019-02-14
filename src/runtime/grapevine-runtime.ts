@@ -4,12 +4,9 @@ import {
   ClusterService,
   ClusterServiceFilter
 } from '../core/cluster';
-import { Address, parseAddress, parseAddresses } from '../core/address-parser';
-import {
-  Gossiper,
-  ServerAdapter,
-  SocketAdapter
-} from '@github1/grapevine';
+import {Address} from '../core/address-parser';
+import {Addresses, prepareAddresses} from './address-provider';
+import {Gossiper, ServerAdapter, SocketAdapter} from '@github1/grapevine';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
@@ -64,10 +61,15 @@ export class GrapevineClusterMembership implements ClusterMembership {
   }
 
   public registerService(id : string, stream : string, address : string) : Promise<void> {
-    this.state.services = this.state.services || {};
-    this.state.services[id] = {id, stream, address};
-    this.updateState();
-    return Promise.resolve();
+    return prepareAddresses(address).then((addresses : Addresses) => {
+      this.state.services = this.state.services || {};
+      this.state.services[id] = {
+        id,
+        stream,
+        address: addresses.nodeAddress.toString()
+      };
+      this.updateState();
+    });
   }
 
   public unregisterService(id : string) : Promise<void> {
@@ -86,36 +88,36 @@ export class GrapevineClusterMembership implements ClusterMembership {
 
 export class GrapevineCluster implements Cluster {
 
-  private address : string;
-  private seeds : string[];
+  private addresses : Promise<Addresses>;
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
-    this.address = parseAddress(address).toString();
-    this.seeds = parseAddresses(seeds)
-      .map((address : Address) => address.toString());
+    this.addresses = prepareAddresses(address, seeds);
   }
 
   public joinCluster() : Promise<ClusterMembership> {
-    const host : string = this.address.split(':')[0];
-    const port : number = parseInt(this.address.split(':')[1], 10);
     return new Promise<ClusterMembership>((resolve : (value : GrapevineClusterMembership) => void) => {
-      const gossiper : Gossiper = new Gossiper({
-        port, seeds: this.seeds,
-        address: host,
-        newServerAdapter: () => {
-          return new ServerAdapter({});
-        },
-        newSocketAdapter: () => {
-          return new SocketAdapter({});
-        }
-      });
-      gossiper.start(() => {
-        // Ensures that updates from a restarted peer are accepted by the cluster
-        // by guaranteeing the initial state version is greater than what was
-        // presented in prior (pre-restart) reconciliation attempts.
-        gossiper.my_state.max_version_seen = new Date().getTime();
-        const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
-        resolve(membership);
+      this.addresses.then((addresses: Addresses) => {
+        const host : string = addresses.nodeAddress.host;
+        const port : number = addresses.nodeAddress.port;
+        const seeds : string[] = addresses.seedAddresses.map((seed: Address) => seed.toString());
+        const gossiper : Gossiper = new Gossiper({
+          port, seeds: seeds,
+          address: host,
+          newServerAdapter: () => {
+            return new ServerAdapter({});
+          },
+          newSocketAdapter: () => {
+            return new SocketAdapter({});
+          }
+        });
+        gossiper.start(() => {
+          // Ensures that updates from a restarted peer are accepted by the cluster
+          // by guaranteeing the initial state version is greater than what was
+          // presented in prior (pre-restart) reconciliation attempts.
+          gossiper.my_state.max_version_seen = new Date().getTime();
+          const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
+          resolve(membership);
+        });
       });
     });
   }
