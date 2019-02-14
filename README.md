@@ -16,7 +16,7 @@ Define a service node:
 const meshage = require('meshage');
 meshage
     .init(
-        // Initialize the cluster to join
+        // Initialize the cluster to join (Grapevine or Consul)
         new meshage.GrapevineCluster(
             process.env.CLUSTER_PORT, 
             (process.env.SEEDS || '').split(',')), 
@@ -139,10 +139,11 @@ curl -sX POST http://localhost:8080/api/broadcast/echo/$RANDOM \
 Configure the cluster to join.
 
 **init(cluster : Cluster) : MessageRouter**
-- `cluster` - accepts an instance of `Cluster` which is responsible for advertising and discovering message handler.
+- `cluster` - an instance of `Cluster` which is responsible for advertising and discovering message handlers.
+- `address` - (optional) an *host:port* pair (string) or simply a numeric port (number) to listen for HTTP requests on 
 
 ```javascript
-const node = meshage.init(cluster);
+const node = meshage.init(cluster, 8080);
 ```
 
 #### *Cluster Implementations:*
@@ -167,14 +168,11 @@ new meshage.GrapevineCluster(9474, [9473]);
 Connects to a consul agent/cluster for service registration.
 
 **ConsulCluster(address : (string | number), seeds : (string | number)[])**
-- `address` - accepts a *host:port* pair (string) or simply a numeric port (number). *The cluster address should point to the associated consul agents HTTP API (typically port 8500)*.
-- `seeds` - accepts an array of `address` values (following the same behavior as the *address* argument). *The seed address should be point to a consul agents serf_lan port (typically port 8301)*.
+- `address` - an *host:port* pair (string) or simply a numeric port (number). *The cluster address should point to the associated consul agents HTTP API (typically port 8500)*.
+- `seeds` - an array of `address` values (following the same behavior as the *address* argument). *The seed address should be point to a consul agents serf_lan port (typically port 8301)*.
 
 ```javascript
-// The initial node in the cluster will not have seeds
-new meshage.GrapevineCluster(9473);
-// Subsequent nodes in the cluster need to specify at least one existing node as a seed
-new meshage.GrapevineCluster(9474, [9473]);
+new meshage.ConsulCluster('127.0.0.1:8500');
 ```
 
 #### Custom Implementations
@@ -183,11 +181,11 @@ Custom cluster types may be provided by implementing the `core/cluster/Cluster` 
 
 ## Register
 
-Registers message handlers on the node.
+Registers a message handler on the node.
 
 **register(stream : string, handler : (message : Message) => any) : MessageRouter**
 - `stream` - the stream name to accept messages for.
-- `handler` - accepts a message handler function.
+- `handler` - the message handler function.
 
 ```javascript
 node.register('someStream', message => {

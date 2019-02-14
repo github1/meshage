@@ -1,15 +1,21 @@
-import { ConnectedMessageRouter, DefaultConnectedMessageRouter, MessageRouter, MessageRouterStartHandler } from '../core/message-router';
-import { ServiceRouter } from '../core/service-router';
-import { MessageHandler, Message } from '../core/message';
-import { Cluster, ClusterMembership } from '../core/cluster';
-import { httpServiceInvoker } from '../core/http-service-invoker';
-import { parseAddress, Address } from '../core/address-parser';
+import {
+  ConnectedMessageRouter,
+  DefaultConnectedMessageRouter,
+  MessageRouter,
+  MessageRouterStartHandler
+} from '../core/message-router';
+import {ServiceRouter} from '../core/service-router';
+import {Message, MessageHandler} from '../core/message';
+import {Cluster, ClusterMembership, ClusterService} from '../core/cluster';
+import {httpServiceInvoker} from '../core/http-service-invoker';
+import {Address, parseAddress} from '../core/address-parser';
 import debug = require('debug');
 
 import express = require('express');
 import bodyParser = require('body-parser');
 
 const log : debug.IDebugger = debug('meshage');
+const logError : debug.IDebugger = debug('meshage:error');
 
 type HandlerRegistration = { stream : string, messageHandler : MessageHandler };
 
@@ -69,11 +75,21 @@ export class ExpressMessageRouter implements MessageRouter {
                 res.send(response);
               })
               .catch((err : Error) => {
-                console.log(err);
+                logError(err);
                 res.sendStatus(500);
               });
           };
 
+        app.get('/api/services', (req : express.Request, res : express.Response) => {
+          membership.services()
+            .then((services : ClusterService[]) => {
+              res.json(services);
+            })
+            .catch((err : Error) => {
+              logError(err);
+              res.status(500).json({error: err.message});
+            });
+        });
         app.all('/api/health', (req : express.Request, res : express.Response) => {
           res.send({status: 'up'});
         });
