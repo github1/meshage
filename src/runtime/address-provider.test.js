@@ -11,6 +11,16 @@ describe('address-provider', () => {
       expect(addresses.seedAddresses[0].port).toBe(8181);
     });
   });
+  it('removes seeds which match the node address', () => {
+    expect.assertions(5);
+    return prepareAddresses('localhost:8080', ['localhost:8080','localhost:8181']).then((addresses) => {
+      expect(addresses.nodeAddress.host).toBe('localhost');
+      expect(addresses.nodeAddress.port).toBe(8080);
+      expect(addresses.seedAddresses.length).toBe(1);
+      expect(addresses.seedAddresses[0].host).toBe('localhost');
+      expect(addresses.seedAddresses[0].port).toBe(8181);
+    });
+  });
   it('can find open ports', () => {
     expect.assertions(2);
     return prepareAddresses('localhost:find', []).then((addresses) => {

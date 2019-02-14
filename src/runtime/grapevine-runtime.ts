@@ -104,6 +104,7 @@ export class GrapevineCluster implements Cluster {
         const host : string = addresses.nodeAddress.host;
         const port : number = addresses.nodeAddress.port;
         const seeds : string[] = addresses.seedAddresses.map((seed : Address) => seed.toString());
+        log('Registering to Gossiper with', addresses);
         const gossiper : Gossiper = new Gossiper({
           port, seeds: seeds,
           address: host,
@@ -118,6 +119,7 @@ export class GrapevineCluster implements Cluster {
           // Ensures that updates from a restarted peer are accepted by the cluster
           // by guaranteeing the initial state version is greater than what was
           // presented in prior (pre-restart) reconciliation attempts.
+          log('Gossiper started', addresses.nodeAddress);
           gossiper.my_state.max_version_seen = new Date().getTime();
           const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
           resolve(membership);

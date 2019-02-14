@@ -22,6 +22,7 @@ export const prepareAddresses = (address : (string | number), seeds : (string | 
     return {
       nodeAddress: value,
       seedAddresses: parseAddresses(seeds)
+        .filter((address: Address) => address.toString() !== value.toString())
     };
   });
 };
