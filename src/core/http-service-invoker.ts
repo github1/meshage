@@ -4,8 +4,8 @@ import { ServiceInvoker } from './service-router';
 import superagent = require('superagent');
 
 export type HttpServiceInvokerOptions = {
-  secure?: boolean,
-  timeout?: number
+  secure?: boolean;
+  timeout?: number;
 };
 
 export const httpServiceInvoker = (opts : HttpServiceInvokerOptions = {}) : ServiceInvoker => {
@@ -21,7 +21,7 @@ export const httpServiceInvoker = (opts : HttpServiceInvokerOptions = {}) : Serv
         .set('X-Service-ID', service.id)
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
-        .end((err : Error, res : { statusCode? : number, body: {}, text: string }) => {
+        .end((err : Error, res : { statusCode? : number; body: {}; text: string }) => {
           if (err) {
             reject(err);
           } else if (res.statusCode >= 200 && res.statusCode < 300) {

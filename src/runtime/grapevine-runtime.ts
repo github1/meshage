@@ -12,8 +12,8 @@ import debug = require('debug');
 const log : debug.IDebugger = debug('meshage');
 
 export class GrapevineClusterMembership implements ClusterMembership {
-  private gossiper : Gossiper;
-  private state : {[key:string]:{}} = {};
+  private readonly gossiper : Gossiper;
+  private readonly state : { [key : string] : {} } = {};
 
   constructor(gossiper : Gossiper) {
     this.gossiper = gossiper;
@@ -40,7 +40,7 @@ export class GrapevineClusterMembership implements ClusterMembership {
         // merge 'local' service state
         const toInclude : ClusterService[] = Object
           .keys(services)
-          .map((key : string) : ClusterService => <ClusterService> services[key]);
+          .map((key : string) : ClusterService => <ClusterService>services[key]);
         toInclude.forEach((service : ClusterService) => {
           if (allServices.filter((existingService : ClusterService) => existingService.id === service.id).length === 0) {
             allServices.push(service);
@@ -48,11 +48,12 @@ export class GrapevineClusterMembership implements ClusterMembership {
         });
       }
     };
-    this.gossiper.livePeers().forEach((addr : string) => {
-      const services : {} = this.gossiper.peerValue(addr, 'services');
-      // merge services from live peers
-      includeServices(services);
-    });
+    this.gossiper.livePeers()
+      .forEach((addr : string) => {
+        const services : {} = this.gossiper.peerValue(addr, 'services');
+        // merge services from live peers
+        includeServices(services);
+      });
     includeServices(this.state.services);
     if (filter) {
       allServices = filter(allServices);
@@ -61,34 +62,37 @@ export class GrapevineClusterMembership implements ClusterMembership {
   }
 
   public registerService(id : string, stream : string, address : string) : Promise<void> {
-    return prepareAddresses(address).then((addresses : Addresses) => {
-      this.state.services = this.state.services || {};
-      this.state.services[id] = {
-        id,
-        stream,
-        address: addresses.nodeAddress.toString()
-      };
-      this.updateState();
-    });
+    return prepareAddresses(address)
+      .then((addresses : Addresses) => {
+        this.state.services = this.state.services || {};
+        this.state.services[id] = {
+          id,
+          stream,
+          address: addresses.nodeAddress.toString()
+        };
+        this.updateState();
+      });
   }
 
   public unregisterService(id : string) : Promise<void> {
     this.state.services = this.state.services || {};
+    // tslint:disable-next-line:no-dynamic-delete
     delete this.state.services[id];
     this.updateState();
     return Promise.resolve();
   }
 
   public updateState() {
-    Object.keys(this.state).forEach((key : string) => {
-      this.gossiper.setLocalState(key, this.state[key]);
-    });
+    Object.keys(this.state)
+      .forEach((key : string) => {
+        this.gossiper.setLocalState(key, this.state[key]);
+      });
   }
 }
 
 export class GrapevineCluster implements Cluster {
 
-  private addresses : Promise<Addresses>;
+  private readonly addresses : Promise<Addresses>;
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.addresses = prepareAddresses(address, seeds);
@@ -96,10 +100,10 @@ export class GrapevineCluster implements Cluster {
 
   public joinCluster() : Promise<ClusterMembership> {
     return new Promise<ClusterMembership>((resolve : (value : GrapevineClusterMembership) => void) => {
-      this.addresses.then((addresses: Addresses) => {
+      this.addresses.then((addresses : Addresses) => {
         const host : string = addresses.nodeAddress.host;
         const port : number = addresses.nodeAddress.port;
-        const seeds : string[] = addresses.seedAddresses.map((seed: Address) => seed.toString());
+        const seeds : string[] = addresses.seedAddresses.map((seed : Address) => seed.toString());
         const gossiper : Gossiper = new Gossiper({
           port, seeds: seeds,
           address: host,

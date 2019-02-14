@@ -2,25 +2,25 @@ import {
   ClusterMembership,
   ClusterService,
   ClusterServiceFilter,
+  composeSelect,
   selectByHashRing,
-  selectByStream,
-  composeSelect
+  selectByStream
 } from './cluster';
-import { MessageHandler, Message } from './message';
-import { v4 } from 'uuid';
+import {Message, MessageHandler} from './message';
+import {v4} from 'uuid';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
 
 export type ServiceInvoker = (message : Message, service : ClusterService) => Promise<{}>;
 
-type ServiceRegistration = { id : string, stream : string, address : string, messageHandler : MessageHandler };
+type ServiceRegistration = { id : string; stream : string; address : string; messageHandler : MessageHandler };
 type ServiceRegistry = { [id : string] : ServiceRegistration };
 
 export class ServiceRouter {
-  private cluster : ClusterMembership;
-  private serviceInvoker : ServiceInvoker;
-  private serviceRegistry : ServiceRegistry;
+  private readonly cluster : ClusterMembership;
+  private readonly serviceInvoker : ServiceInvoker;
+  private readonly serviceRegistry : ServiceRegistry;
 
   constructor(cluster : ClusterMembership, serviceInvoker : ServiceInvoker) {
     this.cluster = cluster;
@@ -40,9 +40,10 @@ export class ServiceRouter {
 
   public unregister(stream : string) : Promise<void> {
     return Promise.all(this.findLocalServicesByStream(stream)
-      .map((registration : ServiceRegistration) => this.cluster.unregisterService(registration.id))).then(() => {
-      // void
-    });
+      .map((registration : ServiceRegistration) => this.cluster.unregisterService(registration.id)))
+      .then(() => {
+        // void
+      });
   }
 
   public send(message : Message) : Promise<{}> {
@@ -68,9 +69,10 @@ export class ServiceRouter {
           return this.invokeService(message, services[0]);
         }
         return Promise.all(services.map((service : ClusterService) => {
-          return this.invokeService(message, service).catch((err : Error) => {
-            return { err: err.message };
-          });
+          return this.invokeService(message, service)
+            .catch((err : Error) => {
+              return {err: err.message};
+            });
         }));
       });
   }

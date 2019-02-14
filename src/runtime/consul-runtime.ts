@@ -4,9 +4,9 @@ import {
   ClusterService,
   ClusterServiceFilter
 } from '../core/cluster';
+import {Address} from '../core/address-parser';
+import {Addresses, prepareAddresses} from './address-provider';
 import consul = require('consul');
-import { Address } from '../core/address-parser';
-import { Addresses, prepareAddresses } from './address-provider';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
@@ -14,13 +14,13 @@ const log : debug.IDebugger = debug('meshage');
 type ConsulService = {
   ServiceID? : string;
   ServiceName? : string;
-  ServiceAddress? : string,
-  ServicePort? : string
+  ServiceAddress? : string;
+  ServicePort? : string;
 };
 
 export class ConsulClusterMembership implements ClusterMembership {
 
-  constructor(private consulClient : consul.Consul) {
+  constructor(private readonly consulClient : consul.Consul) {
   }
 
   public services(filter? : ClusterServiceFilter) : Promise<ClusterService[]> {
@@ -67,28 +67,29 @@ export class ConsulClusterMembership implements ClusterMembership {
 
   public registerService(id : string, stream : string, address : string) : Promise<void> {
     return new Promise((resolve : () => void, reject : (err : Error) => void) => {
-      prepareAddresses(address).then((addresses: Addresses) => {
-        const addr : Address = addresses.nodeAddress;
-        this.consulClient.agent.service.register({
-          id,
-          name: stream,
-          address: addr.host,
-          port: addr.port,
-          check: {
-            http: `http://${addr.host}:${addr.port}/api/health`,
-            interval: '5s',
-            notes: 'http service check',
-            status: 'critical'
-          }
-        }, (err : Error) => {
-          if (err) {
-            log(err);
-            reject(err);
-          } else {
-            resolve();
-          }
+      prepareAddresses(address)
+        .then((addresses : Addresses) => {
+          const addr : Address = addresses.nodeAddress;
+          this.consulClient.agent.service.register({
+            id,
+            name: stream,
+            address: addr.host,
+            port: addr.port,
+            check: {
+              http: `http://${addr.host}:${addr.port}/api/health`,
+              interval: '5s',
+              notes: 'http service check',
+              status: 'critical'
+            }
+          }, (err : Error) => {
+            if (err) {
+              log(err);
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
         });
-      });
     });
   }
 
@@ -109,8 +110,8 @@ export class ConsulClusterMembership implements ClusterMembership {
 
 export class ConsulCluster implements Cluster {
 
-  private addresses : Promise<Addresses>;
-  private consulRef : consul.ConsulStatic = consul;
+  private readonly addresses : Promise<Addresses>;
+  private readonly consulRef : consul.ConsulStatic = consul;
 
   constructor(address : (string | number), seeds : (string | number)[] = []) {
     this.addresses = prepareAddresses(address, seeds);
@@ -119,7 +120,7 @@ export class ConsulCluster implements Cluster {
   public joinCluster() : Promise<ClusterMembership> {
     return new Promise((resolve : (membership : ClusterMembership) => void, // tslint:disable-line:promise-must-complete
                         reject : (err : Error) => void) => {
-      this.addresses.then((addresses: Addresses) => {
+      this.addresses.then((addresses : Addresses) => {
         const host : string = addresses.nodeAddress.host;
         const port : number = addresses.nodeAddress.port;
         const seeds : Address[] = addresses.seedAddresses;

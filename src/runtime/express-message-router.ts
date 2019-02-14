@@ -17,10 +17,10 @@ import bodyParser = require('body-parser');
 const log : debug.IDebugger = debug('meshage');
 const logError : debug.IDebugger = debug('meshage:error');
 
-type HandlerRegistration = { stream : string, messageHandler : MessageHandler };
+type HandlerRegistration = { stream : string; messageHandler : MessageHandler };
 
 const getParam : (req : express.Request, key : string) => string = (req : express.Request, key : string) : string => {
-  const params : {[key:string]:string} = (<{[key:string]:string}> req.params);
+  const params : { [key : string] : string } = (<{ [key : string] : string }>req.params);
   return params[key];
 };
 
@@ -30,11 +30,11 @@ const noop : () => void = (() => {
 
 export class ExpressMessageRouter implements MessageRouter {
 
-  private handlers : HandlerRegistration[] = [];
-  private addresses: Promise<Addresses>;
+  private readonly handlers : HandlerRegistration[] = [];
+  private readonly addresses : Promise<Addresses>;
   private server : { close() : void };
 
-  constructor(private cluster : Cluster,
+  constructor(private readonly cluster : Cluster,
               address : (string | number)) {
     this.addresses = prepareAddresses(address);
   }
@@ -45,7 +45,7 @@ export class ExpressMessageRouter implements MessageRouter {
   }
 
   public start(handler : MessageRouterStartHandler = noop) : void {
-    this.addresses.then((addresses: Addresses) => {
+    this.addresses.then((addresses : Addresses) => {
       this.cluster.joinCluster()
         .then((membership : ClusterMembership) => {
 
@@ -61,7 +61,7 @@ export class ExpressMessageRouter implements MessageRouter {
             (req : express.Request, res : express.Response) => {
               const stream : string = getParam(req, 'stream');
               const partitionKey : string = getParam(req, 'partitionKey');
-              const body : {} = <{}> req.body;
+              const body : {} = <{}>req.body;
               const message : Message = {stream, partitionKey, ...body};
               if (req.get('X-Service-ID')) {
                 message.serviceId = req.get('X-Service-ID');
@@ -88,7 +88,8 @@ export class ExpressMessageRouter implements MessageRouter {
               })
               .catch((err : Error) => {
                 logError(err);
-                res.status(500).json({error: err.message});
+                res.status(500)
+                  .json({error: err.message});
               });
           });
           app.all('/api/health', (req : express.Request, res : express.Response) => {
@@ -105,7 +106,7 @@ export class ExpressMessageRouter implements MessageRouter {
               return connectedMessageRouter.register(handlerRegistration.stream, handlerRegistration.messageHandler);
             }))
               .then(() => {
-                handler(null, connectedMessageRouter);
+                handler(undefined, connectedMessageRouter);
               })
               .catch((err : Error) => {
                 handler(err);
