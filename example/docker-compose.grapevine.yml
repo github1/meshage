@@ -1,20 +1,23 @@
 version: '3'
 services:
-  node-a:
+  node-seed:
     build: ./
+    ports:
+      - '8080:8080'
     environment:
-      - 'CLUSTER_HOST=node-a'
-      - 'CLUSTER_PORT=9374'
+      - 'SERVICE_PORT=8080'
+      - 'CLUSTER_PORT=9374/find'
       - 'LIB=meshage'
       - 'DEBUG=meshage'
     volumes:
       - '../:/meshage:ro'
-  node-b:
+  node-member:
     build: ./
     environment:
-      - 'CLUSTER_HOST=node-b'
+      - 'SERVICE_PORT=8080'
+      - 'CLUSTER_PORT=9374/find'
+      - 'SEED=node-seed:9374'
       - 'LIB=meshage'
-      - 'SEED=node-a:9374'
       - 'DEBUG=meshage'
     volumes:
       - '../:/meshage:ro'
