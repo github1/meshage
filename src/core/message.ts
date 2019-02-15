@@ -1,5 +1,6 @@
 export interface Message {
   serviceId? : string;
+  serviceAddress?: string;
   stream : string;
   partitionKey : string;
   data? : {};

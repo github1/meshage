@@ -17,7 +17,7 @@ export interface MessageRouter extends MessageRouterRegistrar {
 }
 
 export class DefaultConnectedMessageRouter implements ConnectedMessageRouter {
-  constructor(private address : string, private serviceRouter : ServiceRouter) {
+  constructor(private readonly address : string, private readonly serviceRouter : ServiceRouter) {
   }
   public register(stream : string, handler : MessageHandler) : ConnectedMessageRouter {
     this.serviceRouter.register(stream, this.address, handler);
