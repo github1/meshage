@@ -1,11 +1,18 @@
 import {Address, parseAddress, parseAddresses} from '../core/address-parser';
+// // tslint:disable-next-line:no-var-requires
+// const findPort = require('get-port');
 // tslint:disable-next-line:no-var-requires
-const findPort = require('get-port');
+const portfinder = require('portfinder-sync');
 
 export interface Addresses {
   nodeAddress : Address;
   seedAddresses : Address[];
 }
+
+const findPort = (opts: { port: number }): Promise<number> => {
+  // tslint:disable-next-line:no-unsafe-any
+  return Promise.resolve(portfinder.getPort(opts.port));
+};
 
 export const prepareAddresses = (address : (string | number), seeds : (string | number)[] = []) : Promise<Addresses> => {
   const nodeAddress : Address = parseAddress(address);
@@ -22,7 +29,9 @@ export const prepareAddresses = (address : (string | number), seeds : (string | 
     return {
       nodeAddress: value,
       seedAddresses: parseAddresses(seeds)
-        .filter((address: Address) => address.toString() !== value.toString())
+        .filter((address: Address) => {
+          return address.toString() !== value.toString();
+        })
     };
   });
 };

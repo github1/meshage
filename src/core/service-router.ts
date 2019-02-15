@@ -49,7 +49,9 @@ export class ServiceRouter {
   public send(message : Message) : Promise<{}> {
     if (message.serviceId) {
       if (this.serviceRegistry[message.serviceId]) {
-        return Promise.resolve(this.serviceRegistry[message.serviceId].messageHandler(message));
+        const serviceRegistration : ServiceRegistration = this.serviceRegistry[message.serviceId];
+        message.serviceAddress = serviceRegistration.address;
+        return Promise.resolve(serviceRegistration.messageHandler(message));
       } else {
         return Promise.reject(new Error(`Service ${message.serviceId} not found`));
       }
@@ -79,7 +81,10 @@ export class ServiceRouter {
 
   private invokeService(message : Message, service : ClusterService) : Promise<{}> {
     if (this.serviceRegistry[service.id]) {
-      return Promise.resolve(this.serviceRegistry[service.id].messageHandler(message));
+      const serviceRegistration : ServiceRegistration = this.serviceRegistry[service.id];
+      message.serviceId = serviceRegistration.id;
+      message.serviceAddress = serviceRegistration.address;
+      return Promise.resolve(serviceRegistration.messageHandler(message));
     } else {
       return this.serviceInvoker(message, service);
     }

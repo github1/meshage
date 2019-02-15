@@ -7,7 +7,7 @@ import {
 import {ServiceRouter} from '../core/service-router';
 import {Message, MessageHandler} from '../core/message';
 import {Cluster, ClusterMembership, ClusterService} from '../core/cluster';
-import {httpServiceInvoker} from '../core/http-service-invoker';
+import {httpServiceInvoker} from './http-service-invoker';
 import {Addresses, prepareAddresses} from './address-provider';
 import debug = require('debug');
 
@@ -68,6 +68,8 @@ export class ExpressMessageRouter implements MessageRouter {
               }
               const isBroadcast : boolean = /broadcast/.test(req.path);
 
+              log('Handling message', message);
+
               const serviceRouterCall : Promise<{}> = isBroadcast ? serviceRouter
                 .broadcast(message) : serviceRouter
                 .send(message);
@@ -77,7 +79,8 @@ export class ExpressMessageRouter implements MessageRouter {
               })
                 .catch((err : Error) => {
                   logError(err);
-                  res.sendStatus(500);
+                  res.status(500)
+                    .json({ error: err.message });
                 });
             };
 
@@ -98,7 +101,7 @@ export class ExpressMessageRouter implements MessageRouter {
           app.all('/api/:stream/:partitionKey', requestHandler);
           app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
-          this.server = app.listen(port, () => {
+          this.server = app.listen(port,() => {
             log(`Started http service on port ${port}`);
             const connectedMessageRouter : ConnectedMessageRouter =
               new DefaultConnectedMessageRouter(`${host}:${port}`, serviceRouter);
