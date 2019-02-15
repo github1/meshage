@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "A simple peer-to-peer service mesh for HTTP services",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -41,7 +41,6 @@
     "@types/superagent": "^3.8.1",
     "@types/uuid": "^3.4.3",
     "jest": "24.1.0",
-    "nodemon": "^1.11.0",
     "rimraf": "^2.6.1",
     "ts-jest": "^23.10.5",
     "tslint": "^5.12.1",
