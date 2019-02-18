@@ -24,9 +24,10 @@ export class DnodeServiceInvoker implements ServiceInvoker {
     return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
       const endpoint : ClusterServiceEndpoint = service.endpoints
         .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === 'dnode')[0];
+      message.serviceId = service.id;
       log('Invoking cluster endpoint', endpoint, message, service);
       const address : Address = parseAddress(endpoint.description);
-      const d = dnode.connect(address.port);
+      const d = dnode.connect(address.host, address.port);
       d.on('remote', (remote) => {
         remote.handle(message, (response) => {
           d.end();

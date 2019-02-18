@@ -9,13 +9,13 @@ services:
       - 'CLUSTER_PORT=9374'
       - 'LIB=meshage'
       - 'DEBUG=meshage,meshage:*'
-#    volumes:
-#      - '../:/meshage:ro'
+    volumes:
+      - '../:/meshage:ro'
   node-member:
     build: ./
     environment:
       - 'SEED=node-seed:9374'
       - 'LIB=meshage'
       - 'DEBUG=meshage,meshage:*'
-#    volumes:
-#      - '../:/meshage:ro'
+    volumes:
+      - '../:/meshage:ro'
