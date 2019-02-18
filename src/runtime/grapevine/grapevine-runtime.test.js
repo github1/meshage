@@ -54,8 +54,8 @@ describe('grapevineRuntime', () => {
   describe('service registration', () => {
     beforeEach(() => {
       return Promise.all([
-        nodes.a.membership.registerService('node-a-svc-1', 'test-stream', 'anAddress'),
-        nodes.b.membership.registerService('node-b-svc-1', 'test-stream', 'anAddress')
+        nodes.a.membership.registerService({ id: 'node-a-svc-1', stream: 'test-stream', endpoints: [] }),
+        nodes.b.membership.registerService({ id: 'node-b-svc-1', stream: 'test-stream', endpoints: [] })
       ]).then(() => delayUntil(() => {
         return aggregateState.services
           && aggregateState.services['node-a-svc-1']

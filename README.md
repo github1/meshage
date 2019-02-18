@@ -36,7 +36,7 @@ CLUSTER_PORT=9742 SERVICE_PORT=8080 node index.js
 CLUSTER_PORT=9743 SEEDS=127.0.0.1:9742 HTTP_PORT=8081 node index.js
 ```
 
-Each node exposes an HTTP endpoint which accepts arbitrary messages. When a request is received by any instance registered to the cluster cluster a consistent hashing algorithm is used to determine which node should actually handle the request. If the node which receives the initial HTTP request is the designated handler it will respond directly, otherwise the receiving node will re-dispatch the request to the designated node within the cluster.
+Each node exposes an HTTP endpoint which accepts arbitrary messages. When a request is received by any instance registered to the cluster cluster a consistent hashing algorithm is used to determine which node should actually handle the request. If the node which receives the initial HTTP request is the designated handler it will respond directly, otherwise the receiving node will route the request to the designated node within the cluster.
 
 *Request:*
 

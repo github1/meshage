@@ -3,9 +3,9 @@ import {
   ClusterMembership,
   ClusterService,
   ClusterServiceFilter
-} from '../core/cluster';
-import {Address} from '../core/address-parser';
-import {Addresses, prepareAddresses} from './address-provider';
+} from '../../core';
+import {Address, parseAddress} from '../../core/address-parser';
+import {Addresses, prepareAddresses} from '../address-provider';
 import consul = require('consul');
 import debug = require('debug');
 
@@ -45,7 +45,10 @@ export class ConsulClusterMembership implements ClusterMembership {
                       return {
                         id: consulService.ServiceID,
                         stream: consulService.ServiceName,
-                        address: `${consulService.ServiceAddress}:${consulService.ServicePort}`
+                        endpoints: [{
+                          endpointType: 'http',
+                          description: `${consulService.ServiceAddress}:${consulService.ServicePort}`
+                        }]
                       };
                     });
                   resolve(services);
@@ -65,31 +68,28 @@ export class ConsulClusterMembership implements ClusterMembership {
     });
   }
 
-  public registerService(id : string, stream : string, address : string) : Promise<void> {
+  public registerService(registration : ClusterService) : Promise<void> {
     return new Promise((resolve : () => void, reject : (err : Error) => void) => {
-      prepareAddresses(address)
-        .then((addresses : Addresses) => {
-          const addr : Address = addresses.nodeAddress;
-          this.consulClient.agent.service.register({
-            id,
-            name: stream,
-            address: addr.host,
-            port: addr.port,
-            check: {
-              http: `http://${addr.host}:${addr.port}/api/health`,
-              interval: '5s',
-              notes: 'http service check',
-              status: 'critical'
-            }
-          }, (err : Error) => {
-            if (err) {
-              log(err);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
+      const address: Address = parseAddress(registration.endpoints[0].description);
+      this.consulClient.agent.service.register({
+        id: registration.id,
+        name: registration.stream,
+        address: address.host,
+        port: address.port,
+        check: {
+          http: `http://${address.host}:${address.port}/api/health`,
+          interval: '5s',
+          notes: 'http service check',
+          status: 'critical'
+        }
+      }, (err : Error) => {
+        if (err) {
+          log(err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
     });
   }
 

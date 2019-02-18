@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf coverage dist tmp",
     "watch": "tsc -w -p tsconfig.release.json",
-    "lint": "tslint -t stylish --type-check --exclude '**/*.js' --project 'tsconfig.json'",
+    "lint": "tslint -t stylish --exclude '**/*.js' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build",
     "pretest": "npm run lint",
     "test": "jest --runInBand --coverage",
@@ -22,11 +22,11 @@
     "body-parser": "^1.17.2",
     "consul": "^0.33.1",
     "debug": "^3.0.1",
+    "dnode": "^1.2.2",
     "express": "^4.15.4",
     "express-http-proxy": "^1.0.6",
-    "get-port": "^4.1.0",
     "hashring": "^3.2.0",
-    "portfinder-sync": "0.0.2",
+    "portfinder": "^1.0.20",
     "superagent": "^3.8.3",
     "superagent-debugger": "^1.2.9",
     "uuid": "^3.2.1"

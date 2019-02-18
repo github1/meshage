@@ -1,16 +1,21 @@
 import HashRing = require('hashring'); // tslint:disable-line
 
+export interface ClusterServiceEndpoint {
+  endpointType: string;
+  description: string;
+}
+
 export interface ClusterService {
   id : string;
   stream : string;
-  address : string;
+  endpoints: ClusterServiceEndpoint[];
 }
 
 export type ClusterServiceFilter = (services : ClusterService[]) => ClusterService[];
 
 export interface ClusterMembership {
   services(filter? : ClusterServiceFilter) : Promise<ClusterService[]>;
-  registerService(id : string, stream : string, address : string) : Promise<void>;
+  registerService(registration: ClusterService) : Promise<void>;
   unregisterService(id : string) : Promise<void>;
 }
 

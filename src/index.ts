@@ -1,16 +1,22 @@
-import { Cluster } from './core/cluster';
+import {Cluster, DefaultMessageRouter, MessageRouter} from './core';
+import {CompositeServiceInvoker} from './runtime/composite-service-invoker';
+import {DnodeMessageListener, DnodeServiceInvoker} from './runtime/dnode';
+import {HttpMessageListener, HttpServiceInvoker} from './runtime/http';
 
-import { MessageRouter } from './core/message-router';
+export * from './core';
+export * from './runtime/dnode';
+export * from './runtime/http';
+export * from './runtime/grapevine';
+export * from './runtime/consul';
 
-import { ExpressMessageRouter } from './runtime/express-message-router';
-
-export { Cluster } from './core/cluster';
-
-export * from './core/message-router';
-
-export * from './runtime/grapevine-runtime';
-export * from './runtime/consul-runtime';
-
-export const init = (cluster : Cluster, address? : (string | number)) : MessageRouter => {
-  return new ExpressMessageRouter(cluster, address ? address : 8080);
+export const init = (cluster : Cluster, address : (string | number) = 8080) : MessageRouter => {
+  const addressStr: string = `${address}`;
+  return new DefaultMessageRouter(
+    cluster,
+    new CompositeServiceInvoker(
+      new DnodeServiceInvoker(),
+      new HttpServiceInvoker()),
+    new HttpMessageListener(addressStr),
+    new DnodeMessageListener(`${addressStr}/find`)
+  );
 };

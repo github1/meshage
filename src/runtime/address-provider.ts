@@ -1,8 +1,9 @@
-import {Address, parseAddress, parseAddresses} from '../core/address-parser';
-// // tslint:disable-next-line:no-var-requires
-// const findPort = require('get-port');
-// tslint:disable-next-line:no-var-requires
-const portfinder = require('portfinder-sync');
+import {
+  Address,
+  parseAddress,
+  parseAddresses
+} from '../core';
+import { getPortPromise } from 'portfinder';
 
 export interface Addresses {
   nodeAddress : Address;
@@ -11,7 +12,7 @@ export interface Addresses {
 
 const findPort = (opts: { port: number }): Promise<number> => {
   // tslint:disable-next-line:no-unsafe-any
-  return Promise.resolve(portfinder.getPort(opts.port));
+  return getPortPromise(opts);
 };
 
 export const prepareAddresses = (address : (string | number), seeds : (string | number)[] = []) : Promise<Addresses> => {
