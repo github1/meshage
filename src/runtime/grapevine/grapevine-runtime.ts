@@ -2,10 +2,10 @@ import {
   Cluster,
   ClusterMembership,
   ClusterService,
-  ClusterServiceFilter
-} from '../core/cluster';
-import {Address} from '../core/address-parser';
-import {Addresses, prepareAddresses} from './address-provider';
+  ClusterServiceFilter,
+  Address
+} from '../../core';
+import {Addresses, prepareAddresses} from '../address-provider';
 import {Gossiper, ServerAdapter, SocketAdapter} from '@github1/grapevine';
 import debug = require('debug');
 
@@ -19,7 +19,7 @@ export class GrapevineClusterMembership implements ClusterMembership {
     this.gossiper = gossiper;
     gossiper.on('update', (name : string, key : string, value : {}) => {
       if (key !== '__heartbeat__') {
-        log('update', name, key, value);
+        log('update', name, key, JSON.stringify(value, undefined, 2));
       }
     });
     gossiper.on('new_peer', (name : string) => {
@@ -61,17 +61,11 @@ export class GrapevineClusterMembership implements ClusterMembership {
     return Promise.resolve(allServices);
   }
 
-  public registerService(id : string, stream : string, address : string) : Promise<void> {
-    return prepareAddresses(address)
-      .then((addresses : Addresses) => {
-        this.state.services = this.state.services || {};
-        this.state.services[id] = {
-          id,
-          stream,
-          address: addresses.nodeAddress.toString()
-        };
-        this.updateState();
-      });
+  public registerService(registration: ClusterService) : Promise<void> {
+    this.state.services = this.state.services || {};
+    this.state.services[registration.id] = JSON.parse(JSON.stringify(registration));
+    this.updateState();
+    return Promise.resolve();
   }
 
   public unregisterService(id : string) : Promise<void> {

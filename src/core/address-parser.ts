@@ -4,7 +4,7 @@ export class Address {
   constructor(public host : string, public port : number, public portString : string) {
   }
   public toString() : string {
-    return `${this.host}:${this.portString}`;
+    return `${this.host}:${this.port}`;
   }
 }
 

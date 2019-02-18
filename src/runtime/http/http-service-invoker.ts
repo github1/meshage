@@ -1,6 +1,6 @@
-import { ClusterService } from '../core/cluster';
-import { Message } from '../core/message';
-import { ServiceInvoker } from '../core/service-router';
+import {ClusterService, ClusterServiceEndpoint} from '../../core/cluster';
+import {Message} from '../../core/message';
+import {ServiceInvoker, handlesEndpointType} from '../../core/service-router';
 import superagent = require('superagent');
 import superdebug = require('superagent-debugger');
 import debug = require('debug');
@@ -9,15 +9,21 @@ const log : debug.IDebugger = debug('meshage');
 const logError : debug.IDebugger = debug('meshage:error');
 
 export type HttpServiceInvokerOptions = {
-  secure?: boolean;
-  timeout?: number;
+  secure? : boolean;
+  timeout? : number;
 };
 
-export const httpServiceInvoker = (opts : HttpServiceInvokerOptions = { timeout: 1000 }) : ServiceInvoker => {
-  return (message : Message, service : ClusterService) : Promise<{}> => {
+export class HttpServiceInvoker implements ServiceInvoker {
+  constructor(private readonly options: HttpServiceInvokerOptions = {timeout: 1000}) {
+  }
+  public handles(service: ClusterService): boolean {
+    return handlesEndpointType('http')(service);
+  }
+  public invoke(message : Message, service : ClusterService): Promise<{}> {
     return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
-      const protocol = opts.secure ? 'https' : 'http';
-      const url = `${protocol}://${service.address}/api/${message.stream}/${message.partitionKey}`;
+      const endpoint : ClusterServiceEndpoint = service.endpoints
+        .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === 'http')[0];
+      const url = `${endpoint.description}/api/${message.stream}/${message.partitionKey}`;
       log(`Invoking cluster endpoint ${url}`, message, service);
       superagent
         .post(url)
@@ -28,9 +34,10 @@ export const httpServiceInvoker = (opts : HttpServiceInvokerOptions = { timeout:
         .set('Accept', 'application/json')
         // tslint:disable-next-line:no-unsafe-any
         .use(superdebug.default(log))
-        .timeout(opts.timeout)
-        .send(message)
-        .end((err : Error, res : { statusCode? : number; body: {}; text: string }) => {
+        .timeout(this.options.timeout)
+        // tslint:disable-next-line:no-unsafe-any
+        .send(message.data)
+        .end((err : Error, res : { statusCode? : number; body : {}; text : string }) => {
           if (err) {
             logError(err);
             reject(err);
@@ -43,5 +50,5 @@ export const httpServiceInvoker = (opts : HttpServiceInvokerOptions = { timeout:
           }
         });
     });
-  };
-};
+  }
+}

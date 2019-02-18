@@ -1,9 +1,13 @@
-export interface Message {
+export interface MessageHeader {
   serviceId? : string;
-  serviceAddress?: string;
   stream : string;
   partitionKey : string;
-  data? : {};
 }
 
-export type MessageHandler = (message : Message) => {};
+export interface Message extends MessageHeader {
+  // tslint:disable-next-line:no-any
+  data: any;
+}
+
+// tslint:disable-next-line:no-any
+export type MessageHandler = (data : any, header: MessageHeader) => {};

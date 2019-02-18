@@ -28,7 +28,10 @@ setTimeout(() => {
 
   meshage
     .init(cluster, serviceAddress)
-    .register('echo', message => ({echo: message}))
+    .register('echo', (message, header) => ({
+      header,
+      echo: message
+    }))
     .start();
 
 }, delayStartupMs);

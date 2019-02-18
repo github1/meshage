@@ -79,7 +79,7 @@ describe('consulRuntime', () => {
             expect(mockFilter).toHaveBeenCalledWith(services);
             expect(services[0].id).toBe('12345');
             expect(services[0].stream).toBe('foo');
-            expect(services[0].address).toBe('127.0.0.1:8080');
+            expect(services[0].endpoints[0].description).toBe('127.0.0.1:8080');
           });
       });
       it('rejects if failing to list services', () => {
@@ -134,7 +134,14 @@ describe('consulRuntime', () => {
           }
         };
         return new consulRuntime.ConsulClusterMembership(mockConsulClient)
-          .registerService('1234', 'foo', '127.0.0.1:8080')
+          .registerService({
+            id: '1234',
+            stream: 'foo',
+            endpoints: [{
+              endpointType: 'http',
+              description: '127.0.0.1:8080'
+            }]
+          })
           .then(() => {
             expect(mockConsulClient.agent.service.register).toHaveBeenCalled();
           });
@@ -150,7 +157,7 @@ describe('consulRuntime', () => {
           }
         };
         return new consulRuntime.ConsulClusterMembership(mockConsulClient)
-          .registerService('1234', 'foo', '127.0.0.1:8080')
+          .registerService({ id: '1234', stream: 'foo', endpoints: [] })
           .catch(err => err)
           .then(res => {
             expect(res instanceof Error).toBe(true);
