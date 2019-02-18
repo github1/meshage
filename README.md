@@ -10,7 +10,7 @@ npm install meshage --save
 
 ## Usage
 
-Define a service node:
+Initialize a node:
 
 ```javascript
 const meshage = require('meshage');
@@ -36,7 +36,7 @@ CLUSTER_PORT=9742 SERVICE_PORT=8080 node index.js
 CLUSTER_PORT=9743 SEEDS=127.0.0.1:9742 HTTP_PORT=8081 node index.js
 ```
 
-Each node exposes an HTTP endpoint which accepts arbitrary messages. When a request is received by any instance registered to the cluster cluster a consistent hashing algorithm is used to determine which node should actually handle the request. If the node which receives the initial HTTP request is the designated handler it will respond directly, otherwise the receiving node will route the request to the designated node within the cluster.
+Each node exposes an HTTP endpoint which accepts messages for registered streams. When a request is received by any instance registered to the cluster, a consistent hashing algorithm is used to determine which node should handle the request. If the node which receives the initial HTTP request is the designated handler it will respond directly, otherwise the receiving node will route the request to the designated node within the cluster.
 
 *Request:*
 
@@ -51,8 +51,6 @@ curl -sX POST http://localhost:8080/api/echo/$RANDOM \
 ```json
 {
   "echoed": {
-    "stream": "echo",
-    "partitionKey": "4985",
     "hello": "world"
   }
 }
@@ -85,8 +83,6 @@ curl -sX POST http://localhost:8080/api/echo/$RANDOM \
 ```json
 {
   "echoed": {
-    "stream": "echo",
-    "partitionKey": "4985",
     "hello": "world"
   }
 }
@@ -118,15 +114,11 @@ curl -sX POST http://localhost:8080/api/broadcast/echo/$RANDOM \
 [
  {
    "echoed": {
-     "stream": "echo",
-     "partitionKey": "4985",
      "hello": "world"
    }
  }, 
  {
    "echoed": {
-     "stream": "echo",
-     "partitionKey": "4985",
      "hello": "world"
    }
  }
@@ -210,7 +202,7 @@ node.start(router => {
 });
 ```
 
-The `router` instanced passed to  type exposes two methods:
+The `router` instance passed to the `start` callback exposes two methods:
  
 ### Send
 
@@ -230,9 +222,9 @@ Sends a message to all registered handlers for the specified stream.
 
 Address may be supplied in the following formats:
 
-### Host port string
+### Host and port string
 
-The host and port conjoined by a colon.
+The host and port separated by a colon.
 
 _Example_
 
