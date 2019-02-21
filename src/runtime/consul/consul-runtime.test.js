@@ -65,7 +65,14 @@ describe('consulRuntime', () => {
                   ServiceID: '12345',
                   ServiceName: 'foo',
                   ServiceAddress: '127.0.0.1',
-                  ServicePort: '8080'
+                  ServicePort: '8080',
+                  ServiceTags: [
+                    'endpoint~http~http://127.0.0.1:3000',
+                    'endpoint~dnode~127.0.0.1:5000',
+                    'endpoint~',
+                    'endpoint~dnode',
+                    'asdasd'
+                  ]
                 }]);
               })
             }
@@ -79,7 +86,11 @@ describe('consulRuntime', () => {
             expect(mockFilter).toHaveBeenCalledWith(services);
             expect(services[0].id).toBe('12345');
             expect(services[0].stream).toBe('foo');
-            expect(services[0].endpoints[0].description).toBe('127.0.0.1:8080');
+            expect(services[0].endpoints.length).toBe(2);
+            expect(services[0].endpoints[0].endpointType).toBe('http');
+            expect(services[0].endpoints[0].description).toBe('http://127.0.0.1:3000');
+            expect(services[0].endpoints[1].endpointType).toBe('dnode');
+            expect(services[0].endpoints[1].description).toBe('127.0.0.1:5000');
           });
       });
       it('rejects if failing to list services', () => {
@@ -124,6 +135,7 @@ describe('consulRuntime', () => {
     });
     describe('registering services', () => {
       it('registers services', () => {
+        expect.assertions(2);
         const mockConsulClient = {
           agent: {
             service: {
@@ -139,11 +151,13 @@ describe('consulRuntime', () => {
             stream: 'foo',
             endpoints: [{
               endpointType: 'http',
-              description: '127.0.0.1:8080'
+              description: 'http://127.0.0.1:8080'
             }]
           })
           .then(() => {
             expect(mockConsulClient.agent.service.register).toHaveBeenCalled();
+            const reg = mockConsulClient.agent.service.register.mock.calls[0][0];
+            expect(reg.check.http).toBe('http://127.0.0.1:8080/api/health');
           });
       });
       it('rejects when service registration fails', () => {

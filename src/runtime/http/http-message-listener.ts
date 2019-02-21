@@ -36,6 +36,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
                          serviceRouter : ServiceRouter) : Promise<ClusterServiceEndpoint> {
 
     const app : express.Application = express();
+    app.disable('x-powered-by');
     app.use(bodyParser.json());
 
     const requestHandler : (req : express.Request, res : express.Response) => void =

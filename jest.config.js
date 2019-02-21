@@ -5,6 +5,7 @@ module.exports = {
   transform: {
     "^.+\\.ts$": 'ts-jest'
   },
+  roots: ['<rootDir>/src'],
   moduleFileExtensions: [
     'ts',
     'js',

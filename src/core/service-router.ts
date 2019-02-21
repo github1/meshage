@@ -4,6 +4,7 @@ import {
   ClusterServiceEndpoint,
   ClusterServiceFilter,
   composeSelect,
+  hasEndpoints,
   selectByHashRing,
   selectByStream
 } from './cluster';
@@ -17,11 +18,14 @@ export interface ServiceInvoker {
   invoke(message : Message, service : ClusterService): Promise<{}>;
 }
 
+export const getEndpointsByType = (service : ClusterService, endpointType : string) : ClusterServiceEndpoint[] => {
+  return service.endpoints
+    .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === endpointType);
+};
+
 export const handlesEndpointType = (endpointType : string) : (service : ClusterService) => boolean => {
   return (service : ClusterService) : boolean => {
-    return service.endpoints
-      .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === endpointType)
-      .length > 0;
+    return getEndpointsByType(service, endpointType).length > 0;
   };
 };
 
@@ -30,6 +34,14 @@ export interface ServiceRegistration extends ClusterService {
 }
 
 type ServiceRegistry = { [id : string] : ServiceRegistration };
+
+const headerOnly = (message: Message): MessageHeader => {
+  return {
+    serviceId: message.serviceId,
+    stream: message.stream,
+    partitionKey: message.partitionKey
+  };
+};
 
 export class ServiceRouter {
   private readonly serviceRegistry : ServiceRegistry;
@@ -57,7 +69,7 @@ export class ServiceRouter {
     if (message.serviceId) {
       if (this.serviceRegistry[message.serviceId]) {
         const serviceRegistration : ServiceRegistration = this.serviceRegistry[message.serviceId];
-        return Promise.resolve(serviceRegistration.messageHandler(message.data, this.headerOnly(message)));
+        return Promise.resolve(serviceRegistration.messageHandler(message.data, headerOnly(message)));
       } else {
         return Promise.reject(new Error(`Service ${message.serviceId} not found`));
       }
@@ -71,16 +83,15 @@ export class ServiceRouter {
   }
 
   private sendFiltered(message : Message, filter : ClusterServiceFilter) : Promise<{}> {
-    return this.cluster.services(composeSelect(selectByStream(message.stream), filter))
+    return this.cluster.services(composeSelect(selectByStream(message.stream), hasEndpoints(), filter))
       .then((services : ClusterService[]) => {
-        if (services.length === 1) {
+        if (services.length === 0) {
+          return Promise.reject(new Error(`No matching services found for '${message.stream}'`));
+        } else if (services.length === 1) {
           return this.invokeService(message, services[0]);
         }
         return Promise.all(services.map((service : ClusterService) => {
-          return this.invokeService(message, service)
-            .catch((err : Error) => {
-              return {err: err.message};
-            });
+          return this.invokeService(message, service);
         }));
       });
   }
@@ -89,7 +100,7 @@ export class ServiceRouter {
     if (this.serviceRegistry[service.id]) {
       const serviceRegistration : ServiceRegistration = this.serviceRegistry[service.id];
       message.serviceId = serviceRegistration.id;
-      return Promise.resolve(serviceRegistration.messageHandler(message.data, this.headerOnly(message)));
+      return Promise.resolve(serviceRegistration.messageHandler(message.data, headerOnly(message)));
     } else {
       return this.serviceInvoker.invoke(message, service);
     }
@@ -99,14 +110,6 @@ export class ServiceRouter {
     return Object.keys(this.serviceRegistry)
       .map((id : string) => this.serviceRegistry[id])
       .filter((registration : ServiceRegistration) => registration.stream === stream);
-  }
-
-  private headerOnly(message: Message): MessageHeader {
-    return {
-      serviceId: message.serviceId,
-      stream: message.stream,
-      partitionKey: message.partitionKey
-    };
   }
 
 }

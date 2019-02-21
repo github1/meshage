@@ -1,4 +1,4 @@
-const DefaultMessageRouter = require('../../core/message-router').DefaultMessageRouter;
+const DefaultMessageRouter = require('../../core').DefaultMessageRouter;
 const HttpMessageListener = require('./http-message-listener').HttpMessageListener;
 const HttpServiceInvoker = require('./http-service-invoker').HttpServiceInvoker;
 const superagent = require('superagent');

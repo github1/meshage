@@ -16,4 +16,8 @@ describe('parseAddress', () => {
   it('can be printed as a sring', () => {
     expect(parseAddress('foo:80').toString()).toBe('foo:80');
   });
+  it('removes scheme info', () => {
+    expect(parseAddress('http://foo:80').host).toBe('foo');
+    expect(parseAddress('http://foo:80').port).toBe(80);
+  });
 });

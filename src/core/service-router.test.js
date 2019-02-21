@@ -9,13 +9,16 @@ describe('ServiceRouter', () => {
   beforeEach(() => {
     svcs = [{
       id: 'svc-1',
-      stream: 'stream-a'
+      stream: 'stream-a',
+      endpoints: [{}]
     }, {
       id: 'svc-2',
-      stream: 'stream-a'
+      stream: 'stream-a',
+      endpoints: [{}]
     }, {
       id: 'svc-3',
-      stream: 'stream-b'
+      stream: 'stream-b',
+      endpoints: [{}]
     }];
     clusterMembership = {
       services(filter) {
@@ -48,6 +51,15 @@ describe('ServiceRouter', () => {
           expect(serviceInvoker.invoke.mock.calls[1][1].id).toBe('svc-2');
         });
     });
+    it('returns an error if no matching services are found', () => {
+      return router.send({
+        stream: 'non-existent',
+        partitionKey: '123'
+      }).catch((err) => {
+        expect(serviceInvoker.invoke).not.toHaveBeenCalled();
+        expect(err.message).toBe('No matching services found for \'non-existent\'');
+      });
+    });
     describe('when a service is registered on the current process', () => {
       let registeredServiceMessageHandler = jest.fn(() => Promise.resolve());
       beforeEach(() => {
@@ -57,7 +69,8 @@ describe('ServiceRouter', () => {
             messageHandler: registeredServiceMessageHandler }).then(() => {
           svcs.push({
             id: '12345',
-            stream: 'test-stream'
+            stream: 'test-stream',
+            endpoints: [{}]
           });
         });
       });

@@ -12,7 +12,7 @@ global.testLog = (...message) => {
 };
 
 global.getPort = () => {
-  return portfinder.getPortPromise({ port: lastPort + 1 })
+  return portfinder.getPortPromise({ port: lastPort + 2 })
     .then(port => {
       lastPort = port;
       return port;

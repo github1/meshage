@@ -2,9 +2,12 @@ import {
   Cluster,
   ClusterMembership,
   ClusterService,
-  ClusterServiceFilter
+  ClusterServiceEndpoint,
+  ClusterServiceFilter,
+  getEndpointsByType,
+  Address,
+  parseAddress
 } from '../../core';
-import {Address, parseAddress} from '../../core/address-parser';
 import {Addresses, prepareAddresses} from '../address-provider';
 import consul = require('consul');
 import debug = require('debug');
@@ -16,7 +19,10 @@ type ConsulService = {
   ServiceName? : string;
   ServiceAddress? : string;
   ServicePort? : string;
+  ServiceTags? : string[];
 };
+
+const endpointRegex = /^endpoint~([a-z]+)~(.*)$/;
 
 export class ConsulClusterMembership implements ClusterMembership {
 
@@ -39,16 +45,20 @@ export class ConsulClusterMembership implements ClusterMembership {
                 if (err) {
                   reject(err);
                 } else {
-                  log(data);
                   const services : ClusterService[] = data
                     .map((consulService : ConsulService) => {
                       return {
                         id: consulService.ServiceID,
                         stream: consulService.ServiceName,
-                        endpoints: [{
-                          endpointType: 'http',
-                          description: `${consulService.ServiceAddress}:${consulService.ServicePort}`
-                        }]
+                        endpoints: consulService.ServiceTags
+                          .filter((tag : string) => endpointRegex.test(tag))
+                          .map((tag : string) => {
+                            const parts = endpointRegex.exec(tag);
+                            return {
+                              endpointType: parts[1],
+                              description: parts[2]
+                            };
+                          })
                       };
                     });
                   resolve(services);
@@ -61,7 +71,7 @@ export class ConsulClusterMembership implements ClusterMembership {
               .reduce((services : ClusterService[], serviceSet : ClusterService[]) => {
                 return services.concat(serviceSet);
               }, []);
-            resolve(filter(services));
+            resolve(filter ? filter(services) : services);
           })
           .catch(reject);
       });
@@ -70,19 +80,25 @@ export class ConsulClusterMembership implements ClusterMembership {
 
   public registerService(registration : ClusterService) : Promise<void> {
     return new Promise((resolve : () => void, reject : (err : Error) => void) => {
+      const httpEndpoint : ClusterServiceEndpoint = getEndpointsByType(registration, 'http')[0];
       const address: Address = parseAddress(registration.endpoints[0].description);
-      this.consulClient.agent.service.register({
+      const opts = {
         id: registration.id,
         name: registration.stream,
         address: address.host,
         port: address.port,
+        tags: registration.endpoints
+          .map((endpoint: ClusterServiceEndpoint) => {
+            return `endpoint~${endpoint.endpointType}~${endpoint.description}`;
+          }),
         check: {
-          http: `http://${address.host}:${address.port}/api/health`,
+          http: `${httpEndpoint.description}/api/health`,
           interval: '5s',
           notes: 'http service check',
           status: 'critical'
         }
-      }, (err : Error) => {
+      };
+      this.consulClient.agent.service.register(opts, (err : Error) => {
         if (err) {
           log(err);
           reject(err);

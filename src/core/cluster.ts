@@ -49,3 +49,9 @@ export const selectByHashRing = (key : string) : ClusterServiceFilter => {
     return found ? [found] : [];
   };
 };
+
+export const hasEndpoints = () : ClusterServiceFilter => {
+  return (services : ClusterService[]) : ClusterService[] => {
+    return services.filter((service : ClusterService) => (service.endpoints||[]).length > 0);
+  };
+};

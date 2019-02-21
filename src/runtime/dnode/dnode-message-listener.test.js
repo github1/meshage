@@ -1,4 +1,4 @@
-const DefaultMessageRouter = require('../../core/message-router').DefaultMessageRouter;
+const DefaultMessageRouter = require('../../core').DefaultMessageRouter;
 const DnodeMessageListener = require('./dnode-message-listener').DnodeMessageListener;
 const DnodeServiceInvoker = require('./dnode-service-invoker').DnodeServiceInvoker;
 const dnode = require('dnode');

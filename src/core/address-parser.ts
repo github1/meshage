@@ -10,7 +10,7 @@ export class Address {
 
 export const parseAddress = (value : (string | number)) : Address => {
   let host : string = os.hostname();
-  let portString : string = `${value}`;
+  let portString : string = `${value}`.replace(/^([a-z][a-z0-9]+):\/{2}/, '');
   if (portString.indexOf(':') > -1) {
     host = portString.split(':')[0];
     portString = portString.split(':')[1];
