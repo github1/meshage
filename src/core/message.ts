@@ -10,4 +10,4 @@ export interface Message extends MessageHeader {
 }
 
 // tslint:disable-next-line:no-any
-export type MessageHandler = (data : any, header: MessageHeader) => {};
+export type MessageHandler = (data : any, header: MessageHeader) => any;
