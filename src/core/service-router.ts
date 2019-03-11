@@ -69,6 +69,7 @@ export class ServiceRouter {
     if (message.serviceId) {
       if (this.serviceRegistry[message.serviceId]) {
         const serviceRegistration : ServiceRegistration = this.serviceRegistry[message.serviceId];
+        log('Executing local service', serviceRegistration, message);
         return Promise.resolve(serviceRegistration.messageHandler(message.data, headerOnly(message)));
       } else {
         return Promise.reject(new Error(`Service ${message.serviceId} not found`));
