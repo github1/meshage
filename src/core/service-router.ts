@@ -52,7 +52,7 @@ export class ServiceRouter {
   }
 
   public register(registration: ServiceRegistration) : Promise<void> {
-    log(`Registering handler on stream '${registration.stream}'`);
+    log(`Registering service '${registration.id}' on stream '${registration.stream}'`);
     return this.cluster.registerService(registration)
       .then(() => {
         this.serviceRegistry[registration.id] = registration;
