@@ -72,7 +72,9 @@ export class ServiceRouter {
         log('Executing local service', serviceRegistration, message);
         return Promise.resolve(serviceRegistration.messageHandler(message.data, headerOnly(message)));
       } else {
-        return Promise.reject(new Error(`Service ${message.serviceId} not found`));
+        const errorMessage : string = `Service ${message.serviceId} not found`;
+        log(errorMessage, message);
+        return Promise.reject(new Error(errorMessage));
       }
     } else {
       return this.sendFiltered(message, selectByHashRing(message.partitionKey));
