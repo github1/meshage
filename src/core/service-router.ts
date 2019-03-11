@@ -102,8 +102,11 @@ export class ServiceRouter {
   private invokeService(message : Message, service : ClusterService) : Promise<{}> {
     if (this.serviceRegistry[service.id]) {
       const serviceRegistration : ServiceRegistration = this.serviceRegistry[service.id];
-      message.serviceId = serviceRegistration.id;
-      return Promise.resolve(serviceRegistration.messageHandler(message.data, headerOnly(message)));
+      const newMessage : Message = {
+        ...message,
+        serviceId: serviceRegistration.id
+      };
+      return Promise.resolve(serviceRegistration.messageHandler(newMessage.data, headerOnly(newMessage)));
     } else {
       return this.serviceInvoker.invoke(message, service);
     }

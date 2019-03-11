@@ -24,7 +24,11 @@ export class DnodeServiceInvoker implements ServiceInvoker {
     return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
       const endpoint : ClusterServiceEndpoint = service.endpoints
         .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === 'dnode')[0];
-      message.serviceId = service.id;
+      // tslint:disable-next-line:no-parameter-reassignment
+      message = {
+        ...message,
+        serviceId: service.id
+      };
       log('Invoking cluster endpoint', endpoint, message, service);
       const address : Address = parseAddress(endpoint.description);
       const d = dnode.connect(address.host, address.port);

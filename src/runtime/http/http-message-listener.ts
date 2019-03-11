@@ -44,10 +44,12 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
         const stream : string = getParam(req, 'stream');
         const partitionKey : string = getParam(req, 'partitionKey');
         const body : {} = <{}>req.body;
-        const message : Message = {stream, partitionKey, data: body};
-        if (req.get('X-Service-ID')) {
-          message.serviceId = req.get('X-Service-ID');
-        }
+        const message : Message = {
+          stream,
+          partitionKey,
+          serviceId: req.get('X-Service-ID'),
+          data: body
+        };
         const isBroadcast : boolean = /broadcast/.test(req.path);
 
         log('Handling message', message);

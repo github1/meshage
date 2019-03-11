@@ -1,7 +1,7 @@
 export interface MessageHeader {
-  serviceId? : string;
-  stream : string;
-  partitionKey : string;
+  readonly serviceId? : string;
+  readonly stream : string;
+  readonly partitionKey : string;
 }
 
 export interface Message extends MessageHeader {
