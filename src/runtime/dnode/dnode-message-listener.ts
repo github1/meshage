@@ -33,6 +33,8 @@ export class DnodeMessageListener extends NetworkMessageRouterListener {
               cb({ error: err.message });
             });
         }
+      }, {
+        weak: false
       });
       this.server = d.listen(address.port, () => {
         log(`Started dnode service on port ${address.port}`);
