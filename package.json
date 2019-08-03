@@ -1,6 +1,6 @@
 {
   "name": "@github1/meshage",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -8,7 +8,7 @@
     "clean": "rimraf coverage dist tmp",
     "watch": "tsc -w -p tsconfig.release.json",
     "lint": "tslint -t stylish --exclude '**/*.js' --project 'tsconfig.json'",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "./prepare.sh && npm run build",
     "pretest": "npm run lint",
     "test": "jest --runInBand --coverage",
     "test:watch": "jest --watch --runInBand",
