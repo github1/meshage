@@ -1,7 +1,8 @@
 {
-  "name": "meshage",
-  "version": "0.2.9",
-  "description": "A simple peer-to-peer service mesh for HTTP services",
+  "name": "@github1/meshage",
+  "public": true,
+  "version": "0.0.35",
+  "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
@@ -47,5 +48,8 @@
     "tslint": "^5.12.1",
     "tslint-microsoft-contrib": "^6.0.0",
     "typescript": "3.3.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
