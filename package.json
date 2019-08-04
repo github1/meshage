@@ -1,10 +1,10 @@
 {
   "name": "@github1/meshage",
   "public": true,
-  "version": "0.3.3",
+  "version": "0.0.0",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "scripts": {
     "clean": "rimraf coverage dist tmp",
     "watch": "tsc -w -p tsconfig.release.json",
@@ -16,8 +16,8 @@
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json",
     "build:only": "npm run -s clean && tsc -p tsconfig.release.json"
   },
-  "author": "John Collier <john.collier4@gmail.com>",
-  "license": "MIT",
+  "author": "",
+  "license": "",
   "dependencies": {
     "@github1/grapevine": "^1.0.6",
     "body-parser": "^1.17.2",
@@ -51,8 +51,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "repository": {
-    "type": "git"
   }
 }
