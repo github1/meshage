@@ -1,7 +1,7 @@
 {
   "name": "@github1/meshage",
   "public": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
