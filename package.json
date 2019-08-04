@@ -2,8 +2,8 @@
   "name": "@github1/meshage",
   "version": "0.3.5",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "scripts": {
     "clean": "rimraf coverage dist tmp",
     "watch": "tsc -w -p tsconfig.release.json",
