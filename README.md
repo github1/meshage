@@ -9,7 +9,7 @@ A simple peer-to-peer service mesh for HTTP based message handlers. Messages sen
 ## Install
 
 ```shell
-npm install meshage --save
+npm install @github1/meshage --save
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ npm install meshage --save
 Initialize a node:
 
 ```javascript
-const meshage = require('meshage');
+const meshage = require('@github1/meshage');
 meshage
     .init(
         // Initialize the cluster to join (Grapevine or Consul)
