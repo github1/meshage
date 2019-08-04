@@ -1,10 +1,8 @@
 # @github1/meshage
 
-A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
+[description] 
 
-[![build status](https://img.shields.io/travis/github1/meshage/master.svg?style=flat-square)](https://travis-ci.org/github1/meshage)
-[![npm version](https://img.shields.io/npm/v/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
-[![npm downloads](https://img.shields.io/npm/dm/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
+[badges]
 
 ## Install
 
@@ -254,4 +252,4 @@ _Example_
 - `find` - find any open port
 
 ## License
-[MIT](LICENSE.md)
+[license]
