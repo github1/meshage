@@ -175,7 +175,7 @@ new meshage.ConsulCluster('127.0.0.1:8500');
 
 Custom cluster types may be provided by implementing the `core/cluster/Cluster` interface.
 
-## Register
+### Register
 
 Registers a message handler on the node.
 
@@ -189,7 +189,7 @@ node.register('someStream', message => {
 });
 ```
 
-## Start
+### Start
 
 Joins the cluster and begins advertising the nodes message handlers.
 
