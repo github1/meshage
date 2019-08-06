@@ -7,3 +7,4 @@ dist/
 .patches
 .eslintcache
 *.log
+tmp/
