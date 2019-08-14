@@ -1,15 +1,13 @@
-# @github1/meshage
+# meshage
 
-A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
+[description] 
 
-[![build status](https://img.shields.io/travis/github1/meshage/master.svg?style=flat-square)](https://travis-ci.org/github1/meshage)
-[![npm version](https://img.shields.io/npm/v/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
-[![npm downloads](https://img.shields.io/npm/dm/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
+[badges]
 
 ## Install
 
 ```shell
-npm install @github1/meshage --save
+npm install meshage --save
 ```
 
 ## Usage
@@ -17,7 +15,7 @@ npm install @github1/meshage --save
 Initialize a node:
 
 ```javascript
-const meshage = require('@github1/meshage');
+const meshage = require('meshage');
 meshage
     .init(
         // Initialize the cluster to join (Grapevine or Consul)
@@ -72,7 +70,7 @@ send/receive messages. The following protocols are registered for each node.
 By default, all of the above are enabled. You may configure a router with 
 specific protocols as follows:
 
-```javascript
+```
 const router = return new meshage.DefaultMessageRouter(
     cluster,
     new CompositeServiceInvoker(
@@ -275,4 +273,4 @@ _Example_
 - `find` - find any open port
 
 ## License
-[MIT](LICENSE.md)
+[license]
