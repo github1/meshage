@@ -1,10 +1,8 @@
 # meshage
 
-A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
+[description] 
 
-[![build status](https://img.shields.io/travis/github1/meshage/master.svg?style=flat-square)](https://travis-ci.org/github1/meshage)
-[![npm version](https://img.shields.io/npm/v/meshage.svg?style=flat-square)](https://www.npmjs.com/package/meshage)
-[![npm downloads](https://img.shields.io/npm/dm/meshage.svg?style=flat-square)](https://www.npmjs.com/package/meshage)
+[badges]
 
 ## Install
 
@@ -12,9 +10,9 @@ A simple peer-to-peer service mesh for HTTP based message handlers. Messages sen
 npm install meshage --save
 ```
 
-## Usage
+## Example
 
-Initialize a node:
+Initialize a cluster/node:
 
 ```javascript
 const meshage = require('meshage');
@@ -33,14 +31,25 @@ meshage
     .start();
 ```
 
-Start one or more instances:
+Given the above example, create a cluster of nodes:
 
-```shell
-CLUSTER_PORT=9742 SERVICE_PORT=8080 node index.js
+_Start a seed node_
+
+```bash
+CLUSTER_PORT=9742 HTTP_PORT=8080 node index.js
+```
+
+_Start other nodes referencing the seed address to join the cluster_
+```bash
 CLUSTER_PORT=9743 SEEDS=127.0.0.1:9742 HTTP_PORT=8081 node index.js
 ```
 
-Each node exposes an HTTP endpoint which accepts messages for registered streams. When a request is received by any instance registered to the cluster, a consistent hashing algorithm is used to determine which node should handle the request. If the node which receives the initial HTTP request is the designated handler it will respond directly, otherwise the receiving node will route the request to the designated node within the cluster.
+Each node exposes an HTTP endpoint which accepts messages for registered 
+streams. When a request is received by any instance registered to the cluster, 
+a consistent hashing algorithm is used to determine which node should handle 
+the request. If the node which receives the initial HTTP request is the 
+designated handler it will respond directly, otherwise the receiving node will 
+route the request to the designated node within the cluster.
 
 *Request:*
 
@@ -63,20 +72,21 @@ curl -sX POST http://localhost:8080/api/echo/$RANDOM \
 ## Supported protocols
 
 Nodes in a cluster will automatically negotiate a protocol to use to 
-send/receive messages. The following protocols are registered for each node.
+send/receive messages. The following protocols are registered for each node 
+by default.
 
 - [http](https://tools.ietf.org/html/rfc2616) 
 - [rsocket](https://github.com/rsocket/rsocket-js)
 - [dnode](https://github.com/substack/dnode#readme)
 
-By default, all of the above are enabled. You may configure a router with 
-specific protocols as follows:
+You may configure a router with specific protocols as follows:
+
+_The below example uses only the `RSocket` protocol._
 
 ```javascript
 const router = return new meshage.DefaultMessageRouter(
     cluster,
-    new CompositeServiceInvoker(
-      new RSocketServiceInvoker()),
+    new RSocketServiceInvoker(),
     new RSocketMessageListener(`${addressStr}/find`)
   );
 ```
@@ -163,9 +173,9 @@ Configure the cluster to join.
 const node = meshage.init(cluster, 8080);
 ```
 
-#### *Cluster Implementations:*
+#### Cluster Implementations:
 
-#### GrapevineCluster
+##### GrapevineCluster
 
 Leverages an implementation of the Gossip protocol to discover nodes and services.
 
@@ -180,7 +190,7 @@ new meshage.GrapevineCluster(9473);
 new meshage.GrapevineCluster(9474, [9473]);
 ```
 
-#### ConsulCluster
+##### ConsulCluster
 
 Connects to a consul agent/cluster for service registration.
 
@@ -192,7 +202,7 @@ Connects to a consul agent/cluster for service registration.
 new meshage.ConsulCluster('127.0.0.1:8500');
 ```
 
-#### Custom Implementations
+##### Custom cluster implementations
 
 Custom cluster types may be provided by implementing the `core/cluster/Cluster` interface.
 
@@ -231,7 +241,9 @@ The `router` instance passed to the `start` callback exposes two methods:
  
 ### Send
 
-Sends a message to be handled consistently by a registered handler for the specified stream. Depending on how the message is routed, it could be handled by the node itself.
+Sends a message to be handled consistently by a registered handler for the 
+specified stream. Depending on how the message is routed, it could be handled 
+by the node itself.
 
 **send(message : Message) : Promise<{}>**
 - `message` - the message to send
@@ -275,4 +287,4 @@ _Example_
 - `find` - find any open port
 
 ## License
-[MIT](LICENSE.md)
+[license]
