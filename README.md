@@ -1,8 +1,10 @@
 # @github1/meshage
 
-[description] 
+A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
 
-[badges]
+[![build status](https://img.shields.io/travis/github1/meshage/master.svg?style=flat-square)](https://travis-ci.org/github1/meshage)
+[![npm version](https://img.shields.io/npm/v/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
+[![npm downloads](https://img.shields.io/npm/dm/@github1/meshage.svg?style=flat-square)](https://www.npmjs.com/package/@github1/meshage)
 
 ## Install
 
@@ -56,6 +58,27 @@ curl -sX POST http://localhost:8080/api/echo/$RANDOM \
     "hello": "world"
   }
 }
+```
+
+## Supported protocols
+
+Nodes in a cluster will automatically negotiate a protocol to use to 
+send/receive messages. The following protocols are registered for each node.
+
+- [http](https://tools.ietf.org/html/rfc2616) 
+- [rsocket](https://github.com/rsocket/rsocket-js)
+- [dnode](https://github.com/substack/dnode#readme)
+
+By default, all of the above are enabled. You may configure a router with 
+specific protocols as follows:
+
+```javascript
+const router = return new meshage.DefaultMessageRouter(
+    cluster,
+    new CompositeServiceInvoker(
+      new RSocketServiceInvoker()),
+    new RSocketMessageListener(`${addressStr}/find`)
+  );
 ```
 
 ## HTTP API
@@ -252,4 +275,4 @@ _Example_
 - `find` - find any open port
 
 ## License
-[license]
+[MIT](LICENSE.md)
