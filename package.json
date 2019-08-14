@@ -10,7 +10,7 @@
     "lint": "tslint  --exclude '**/*.js' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build && ./prepare.sh",
     "pretest": "npm run lint",
-    "test": "jest --runInBand --coverage",
+    "test": "jest --runInBand --coverage --forceExit",
     "test:watch": "jest --watch --runInBand",
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json",
     "build:only": "npm run -s clean && tsc -p tsconfig.release.json"

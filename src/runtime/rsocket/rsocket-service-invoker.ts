@@ -47,7 +47,7 @@ export class RSocketServiceInvoker extends AbstractServiceInvoker {
             response.subscribe({
               onComplete: (response : Payload<Buffer, null>) => {
                 resolve(JSON.parse(response.data.toString()));
-                //client.close();
+                client.close();
               },
               onError: reject,
               onSubscribe: () => { /* no op */ }
