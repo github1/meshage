@@ -1,2 +1,2 @@
-export * from './dnode-message-listener';
-export * from './dnode-service-invoker';
+export * from './rsocket-message-listener';
+export * from './rsocket-service-invoker';

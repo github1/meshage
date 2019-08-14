@@ -1,30 +1,32 @@
-import {ClusterService, ClusterServiceEndpoint} from '../../core/cluster';
-import {Message} from '../../core/message';
-import {ServiceInvoker, handlesEndpointType} from '../../core/service-router';
+import {
+  AbstractServiceInvoker,
+  Address,
+  ClusterService,
+  ClusterServiceEndpoint,
+  Message
+} from '../../core';
 import superagent = require('superagent');
 import superdebug = require('superagent-debugger');
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
-const logError : debug.IDebugger = debug('meshage:error');
 
 export type HttpServiceInvokerOptions = {
   secure? : boolean;
   timeout? : number;
 };
 
-export class HttpServiceInvoker implements ServiceInvoker {
+export class HttpServiceInvoker extends AbstractServiceInvoker {
   constructor(private readonly options: HttpServiceInvokerOptions = {timeout: 1000}) {
+    super('http');
   }
-  public handles(service: ClusterService): boolean {
-    return handlesEndpointType('http')(service);
-  }
-  public invoke(message : Message, service : ClusterService): Promise<{}> {
+  protected doSend(
+    address : Address,
+    message : Message,
+    service : ClusterService,
+    endpoint : ClusterServiceEndpoint) : Promise<{}> {
     return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
-      const endpoint : ClusterServiceEndpoint = service.endpoints
-        .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === 'http')[0];
       const url = `${endpoint.description}/api/${message.stream}/${message.partitionKey}`;
-      log(`Invoking cluster endpoint ${url}`, message, service);
       superagent
         .post(url)
         .set('X-Stream', message.stream)
@@ -39,13 +41,11 @@ export class HttpServiceInvoker implements ServiceInvoker {
         .send(message.data)
         .end((err : Error, res : { statusCode? : number; body : {}; text : string }) => {
           if (err) {
-            logError(err);
             reject(err);
           } else if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.body);
           } else {
             const err = new Error(`${res.statusCode}`);
-            logError(err);
             reject(err);
           }
         });

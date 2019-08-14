@@ -2,6 +2,7 @@ import {Cluster, DefaultMessageRouter, MessageRouter} from './core';
 import {CompositeServiceInvoker} from './runtime/composite-service-invoker';
 import {DnodeMessageListener, DnodeServiceInvoker} from './runtime/dnode';
 import {HttpMessageListener, HttpServiceInvoker} from './runtime/http';
+import {RSocketMessageListener, RSocketServiceInvoker} from './runtime/rsocket';
 
 export * from './core';
 export * from './runtime/dnode';
@@ -14,9 +15,11 @@ export const init = (cluster : Cluster, address : (string | number) = 8080) : Me
   return new DefaultMessageRouter(
     cluster,
     new CompositeServiceInvoker(
+      new RSocketServiceInvoker(),
       new DnodeServiceInvoker(),
       new HttpServiceInvoker()),
     new HttpMessageListener(addressStr),
-    new DnodeMessageListener(`${addressStr}/find`)
+    new DnodeMessageListener(`${addressStr}/find`),
+    new RSocketMessageListener(`${addressStr}/find`)
   );
 };

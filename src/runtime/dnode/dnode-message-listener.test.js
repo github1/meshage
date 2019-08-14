@@ -70,7 +70,7 @@ describe('DnodeMessageListener', () => {
         });
       });
     }).then((res) => {
-      expect(res.message).toMatch(/hello from router\-[a-z]/);
+      expect(res.message).toMatch(/hello from router-[a-z]/);
       expect(res.header.stream).toBe('some-stream');
       expect(res.header.partitionKey).toBe('1234');
     });
