@@ -1,13 +1,15 @@
-# @github1/meshage
+# meshage
 
-[description] 
+A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster. 
 
-[badges]
+[![build status](https://img.shields.io/travis/github1/meshage/master.svg?style=flat-square)](https://travis-ci.org/github1/meshage)
+[![npm version](https://img.shields.io/npm/v/meshage.svg?style=flat-square)](https://www.npmjs.com/package/meshage)
+[![npm downloads](https://img.shields.io/npm/dm/meshage.svg?style=flat-square)](https://www.npmjs.com/package/meshage)
 
 ## Install
 
 ```shell
-npm install @github1/meshage --save
+npm install meshage --save
 ```
 
 ## Usage
@@ -15,7 +17,7 @@ npm install @github1/meshage --save
 Initialize a node:
 
 ```javascript
-const meshage = require('@github1/meshage');
+const meshage = require('meshage');
 meshage
     .init(
         // Initialize the cluster to join (Grapevine or Consul)
@@ -273,4 +275,4 @@ _Example_
 - `find` - find any open port
 
 ## License
-[license]
+[MIT](LICENSE.md)
