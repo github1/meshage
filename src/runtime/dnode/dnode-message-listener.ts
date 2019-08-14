@@ -10,6 +10,7 @@ import dnode = require('dnode');
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
+const logError : debug.IDebugger = debug('meshage:error');
 
 export class DnodeMessageListener extends NetworkMessageRouterListener {
 
@@ -20,7 +21,7 @@ export class DnodeMessageListener extends NetworkMessageRouterListener {
   }
 
   public initWithAddress(address: Address, membership: ClusterMembership, serviceRouter: ServiceRouter) : Promise<ClusterServiceEndpoint> {
-    return new Promise<ClusterServiceEndpoint>((resolve: (value: ClusterServiceEndpoint) => void) => {
+    return new Promise<ClusterServiceEndpoint>((resolve: (value: ClusterServiceEndpoint) => void, reject : (error : Error) => void) => {
       const d = dnode({
         handle : (message, cb) => {
           log('Handling message', message);
@@ -36,13 +37,18 @@ export class DnodeMessageListener extends NetworkMessageRouterListener {
       }, {
         weak: false
       });
-      this.server = d.listen(address.port, () => {
-        log(`Started dnode service on port ${address.port}`);
-        resolve({
-          endpointType: 'dnode',
-          description: `${address.host}:${address.port}`
+      try {
+        this.server = d.listen(address.port, () => {
+          log(`Started dnode service on port ${address.port}`);
+          resolve({
+            endpointType: 'dnode',
+            description: `${address.host}:${address.port}`
+          });
         });
-      });
+      } catch (err) {
+        logError(err);
+        reject(err);
+      }
     });
   }
 

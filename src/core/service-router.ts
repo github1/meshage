@@ -10,13 +10,13 @@ import {
 } from './cluster';
 import {Message, MessageHandler, MessageHeader} from './message';
 import debug = require('debug');
+import {
+  Address,
+  parseAddress
+} from './address-parser';
 
 const log : debug.IDebugger = debug('meshage');
-
-export interface ServiceInvoker {
-  handles(service: ClusterService): boolean;
-  invoke(message : Message, service : ClusterService): Promise<{}>;
-}
+const logError : debug.IDebugger = debug('meshage:error');
 
 export const getEndpointsByType = (service : ClusterService, endpointType : string) : ClusterServiceEndpoint[] => {
   return service.endpoints
@@ -28,6 +28,45 @@ export const handlesEndpointType = (endpointType : string) : (service : ClusterS
     return getEndpointsByType(service, endpointType).length > 0;
   };
 };
+
+export interface ServiceInvoker {
+  handles(service: ClusterService): boolean;
+  invoke(message : Message, service : ClusterService): Promise<{}>;
+}
+
+export class AbstractServiceInvoker implements ServiceInvoker {
+  constructor(private readonly endpointType : string) {
+  }
+  public handles(service : ClusterService) : boolean {
+    return handlesEndpointType(this.endpointType)(service);
+  }
+  public invoke(message : Message, service : ClusterService) : Promise<{}> {
+    return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
+      const endpoint : ClusterServiceEndpoint = service.endpoints
+        .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === this.endpointType)[0];
+      // tslint:disable-next-line:no-parameter-reassignment
+      message = {
+        ...message,
+        serviceId: service.id
+      };
+      log('Invoking cluster endpoint', endpoint, message, service);
+      const address : Address = parseAddress(endpoint.description);
+      this.doSend(address, message, service, endpoint)
+        .then(resolve)
+        .catch((error : Error) => {
+          logError(error);
+          reject(error);
+        });
+    });
+  }
+  protected doSend(
+    address: Address,
+    message : Message,
+    service : ClusterService,
+    endpoint : ClusterServiceEndpoint) : Promise<{}> {
+    return Promise.reject(new Error('Not implemented'));
+  }
+}
 
 export interface ServiceRegistration extends ClusterService {
   messageHandler: MessageHandler;

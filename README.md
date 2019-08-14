@@ -58,6 +58,27 @@ curl -sX POST http://localhost:8080/api/echo/$RANDOM \
 }
 ```
 
+## Supported protocols
+
+Nodes in a cluster will automatically negotiate a protocol to use to 
+send/receive messages. The following protocols are registered for each node.
+
+- [http](https://tools.ietf.org/html/rfc2616) 
+- [rsocket](https://github.com/rsocket/rsocket-js)
+- [dnode](https://github.com/substack/dnode#readme)
+
+By default, all of the above are enabled. You may configure a router with 
+specific protocols as follows:
+
+```
+const router = return new meshage.DefaultMessageRouter(
+    cluster,
+    new CompositeServiceInvoker(
+      new RSocketServiceInvoker()),
+    new RSocketMessageListener(`${addressStr}/find`)
+  );
+```
+
 ## HTTP API
 
 ### Send
