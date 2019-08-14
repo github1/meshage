@@ -72,7 +72,7 @@ send/receive messages. The following protocols are registered for each node.
 By default, all of the above are enabled. You may configure a router with 
 specific protocols as follows:
 
-```
+```javascript
 const router = return new meshage.DefaultMessageRouter(
     cluster,
     new CompositeServiceInvoker(
