@@ -1,4 +1,4 @@
-# @github1/meshage
+# meshage
 
 A simple service mesh. Messages sent within the service mesh can be consistently partitioned across members of the cluster. 
 
@@ -9,7 +9,7 @@ A simple service mesh. Messages sent within the service mesh can be consistently
 ## Install
 
 ```shell
-npm install @github1/meshage --save
+npm install meshage --save
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ npm install @github1/meshage --save
 Initialize a node:
 
 ```javascript
-const meshage = require('@github1/meshage');
+const meshage = require('meshage');
 meshage
     .init(
         // Initialize the cluster to join (Grapevine or Consul)

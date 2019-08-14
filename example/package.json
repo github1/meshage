@@ -9,6 +9,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@github1/meshage": "*"
+    "meshage": "*"
   }
 }
