@@ -163,7 +163,7 @@ curl -sX POST http://localhost:8080/api/broadcast/echo/$RANDOM \
 ## JS API
 
 ### Init 
-Configure the cluster to join.
+Configures the cluster to join.
 
 **init(cluster : Cluster) : MessageRouter**
 - `cluster` - an instance of `Cluster` which is responsible for advertising and discovering message handlers.
