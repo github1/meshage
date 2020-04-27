@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "v0.3.94",
+  "version": "0.3.94",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
