@@ -36,7 +36,7 @@ describe('HttpMessageListener', () => {
       return new Promise((resolve) => {
         getPort()
           .then((port) => {
-            const listener = new HttpMessageListener(port);
+            const listener = new HttpMessageListener(`localhost:${port}`);
             new DefaultMessageRouter(
               fakeCluster,
               new HttpServiceInvoker(),
