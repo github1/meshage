@@ -86,7 +86,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
     app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
     return new Promise<ClusterServiceEndpoint>((resolve : (value : ClusterServiceEndpoint) => void) => {
-      this.server = app.listen(address.port, () => {
+      this.server = app.listen(address.port, address.host,() => {
         log(`Started http service on port ${address.port}`);
         resolve({
           endpointType: 'http',
