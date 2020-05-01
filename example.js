@@ -1,5 +1,11 @@
-const meshage = require(process.env.LIB || '../dist/src');
+const {
+  init,
+  ConsulCluster,
+  GrapevineCluster
+} = require('./dist/src');
 const os = require('os');
+
+process.on('SIGTERM', () => process.exit(1));
 
 const serviceHost = process.env.SERVICE_HOST || os.hostname();
 const servicePort = process.env.SERVICE_PORT || '8080/find';
@@ -21,13 +27,12 @@ setTimeout(() => {
 
   let cluster;
   if (clusterType === 'consul') {
-    cluster = new meshage.ConsulCluster(clusterAddress, seeds);
+    cluster = new ConsulCluster(clusterAddress, seeds);
   } else {
-    cluster = new meshage.GrapevineCluster(clusterAddress, seeds);
+    cluster = new GrapevineCluster(clusterAddress, seeds);
   }
 
-  meshage
-    .init(cluster, serviceAddress)
+  init(cluster, serviceAddress)
     .register('echo', (message, header) => ({
       header,
       echo: message

@@ -74,6 +74,7 @@ export class RSocketMessageListener extends NetworkMessageRouterListener {
   }
 
   public stop() {
+    log(`Stopping rsocket listener on ${this.address}`);
     this.server.stop();
   }
 

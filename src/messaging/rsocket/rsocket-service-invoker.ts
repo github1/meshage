@@ -21,6 +21,10 @@ export class RSocketServiceInvoker extends AbstractServiceInvoker {
 
   protected doSend(address : Address, message : Message, service : ClusterService) : Promise<{}> {
     return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
+      const tcpClient : RSocketTcpClient = new RSocketTcpClient(
+        address,
+        BufferEncoders
+      );
       const client : RSocketClient<Buffer, null> = new RSocketClient({
         setup: {
           // ms btw sending keepalive to server
@@ -30,10 +34,7 @@ export class RSocketServiceInvoker extends AbstractServiceInvoker {
           dataMimeType: 'application/octet-stream',
           metadataMimeType: 'application/octet-stream'
         },
-        transport: new RSocketTcpClient(
-          address,
-          BufferEncoders
-        )
+        transport: tcpClient
       });
 
       client
@@ -47,14 +48,17 @@ export class RSocketServiceInvoker extends AbstractServiceInvoker {
             response.subscribe({
               onComplete: (response : Payload<Buffer, null>) => {
                 resolve(JSON.parse(response.data.toString()));
-                client.close();
               },
               onError: reject,
-              onSubscribe: () => { /* no op */ }
+              onSubscribe: () => {
+                // no op
+              }
             });
           },
           onError: reject,
-          onSubscribe: cancel => {/* call cancel() to abort */}
+          onSubscribe: cancel => {
+            // call cancel() to abort
+          }
         });
     });
   }

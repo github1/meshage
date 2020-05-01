@@ -29,6 +29,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
   }
 
   public stop() {
+    log(`Stopping http listener on ${this.address}`);
     this.server.close();
   }
 

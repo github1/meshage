@@ -1,21 +1,21 @@
 version: '3'
 services:
   node-seed:
-    build: ./
-    ports:
-      - '8080:8080'
+    image: jcollier/meshage-base:latest
+    build: .
     environment:
       - 'SERVICE_PORT=8080'
       - 'CLUSTER_PORT=9374'
       - 'LIB=meshage'
       - 'DEBUG=meshage,meshage:*'
     volumes:
-      - '../:/meshage:ro'
+      - './example.js:/opt/app/index.js:ro'
   node-member:
-    build: ./
+    image: jcollier/meshage-base:latest
+    build: .
     environment:
       - 'SEED=node-seed:9374'
       - 'LIB=meshage'
       - 'DEBUG=meshage,meshage:*'
     volumes:
-      - '../:/meshage:ro'
+      - './example.js:/opt/app/index.js:ro'

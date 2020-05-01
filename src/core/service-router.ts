@@ -8,12 +8,16 @@ import {
   selectByHashRing,
   selectByStream
 } from './cluster';
-import {Message, MessageHandler, MessageHeader} from './message';
-import debug = require('debug');
+import {
+  Message,
+  MessageHandler,
+  MessageHeader
+} from './message';
 import {
   Address,
   parseAddress
 } from './address-parser';
+import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage');
 const logError : debug.IDebugger = debug('meshage:error');
@@ -30,37 +34,39 @@ export const handlesEndpointType = (endpointType : string) : (service : ClusterS
 };
 
 export interface ServiceInvoker {
-  handles(service: ClusterService): boolean;
-  invoke(message : Message, service : ClusterService): Promise<{}>;
+  handles(service : ClusterService) : boolean;
+
+  invoke(message : Message, service : ClusterService) : Promise<{}>;
 }
 
 export class AbstractServiceInvoker implements ServiceInvoker {
   constructor(private readonly endpointType : string) {
   }
+
   public handles(service : ClusterService) : boolean {
     return handlesEndpointType(this.endpointType)(service);
   }
-  public invoke(message : Message, service : ClusterService) : Promise<{}> {
-    return new Promise((resolve : (value : {}) => void, reject : (err : Error) => void) => {
-      const endpoint : ClusterServiceEndpoint = service.endpoints
-        .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === this.endpointType)[0];
-      // tslint:disable-next-line:no-parameter-reassignment
-      message = {
-        ...message,
-        serviceId: service.id
-      };
-      log('Invoking cluster endpoint', endpoint, message, service);
-      const address : Address = parseAddress(endpoint.description);
-      this.doSend(address, message, service, endpoint)
-        .then(resolve)
-        .catch((error : Error) => {
-          logError(error);
-          reject(error);
-        });
-    });
+
+  public async invoke(message : Message, service : ClusterService) : Promise<{}> {
+    const endpoint : ClusterServiceEndpoint = service.endpoints
+      .filter((endpoint : ClusterServiceEndpoint) => endpoint.endpointType === this.endpointType)[0];
+    // tslint:disable-next-line:no-parameter-reassignment
+    message = {
+      ...message,
+      serviceId: service.id
+    };
+    log('Invoking cluster endpoint', endpoint, message, service);
+    const address : Address = parseAddress(endpoint.description);
+    try {
+      return await this.doSend(address, message, service, endpoint);
+    } catch (err) {
+      logError(err);
+      throw err;
+    }
   }
+
   protected doSend(
-    address: Address,
+    address : Address,
     message : Message,
     service : ClusterService,
     endpoint : ClusterServiceEndpoint) : Promise<{}> {
@@ -69,12 +75,12 @@ export class AbstractServiceInvoker implements ServiceInvoker {
 }
 
 export interface ServiceRegistration extends ClusterService {
-  messageHandler: MessageHandler;
+  messageHandler : MessageHandler;
 }
 
 type ServiceRegistry = { [id : string] : ServiceRegistration };
 
-const headerOnly = (message: Message): MessageHeader => {
+const headerOnly = (message : Message) : MessageHeader => {
   return {
     serviceId: message.serviceId,
     stream: message.stream,
@@ -90,18 +96,16 @@ export class ServiceRouter {
     this.serviceRegistry = {};
   }
 
-  public register(registration: ServiceRegistration) : Promise<void> {
+  public async register(registration : ServiceRegistration) : Promise<void> {
     log(`Registering service '${registration.id}' on stream '${registration.stream}'`);
-    return this.cluster.registerService(registration)
-      .then(() => {
-        this.serviceRegistry[registration.id] = registration;
-      });
+    await this.cluster.registerService(registration);
+    this.serviceRegistry[registration.id] = registration;
   }
 
-  public unregister(stream : string) : Promise<void> {
-    return Promise.all(this.findLocalServicesByStream(stream)
-      .map((registration : ServiceRegistration) => this.cluster.unregisterService(registration.id)))
-      .then(() => undefined);
+  public async unregister(stream : string) : Promise<void> {
+    await Promise.all(this.findLocalServicesByStream(stream)
+      .map((registration : ServiceRegistration) => this.cluster.unregisterService(registration.id)));
+    return undefined;
   }
 
   public send(message : Message) : Promise<{}> {
@@ -124,18 +128,17 @@ export class ServiceRouter {
     return this.sendFiltered(message, (services : ClusterService[]) => services);
   }
 
-  private sendFiltered(message : Message, filter : ClusterServiceFilter) : Promise<{}> {
-    return this.cluster.services(composeSelect(selectByStream(message.stream), hasEndpoints(), filter))
-      .then((services : ClusterService[]) => {
-        if (services.length === 0) {
-          return Promise.reject(new Error(`No matching services found for '${message.stream}'`));
-        } else if (services.length === 1) {
-          return this.invokeService(message, services[0]);
-        }
-        return Promise.all(services.map((service : ClusterService) => {
-          return this.invokeService(message, service);
-        }));
-      });
+  private async sendFiltered(message : Message, filter : ClusterServiceFilter) : Promise<{}> {
+    const services : ClusterService[] = await this.cluster
+      .services(
+        composeSelect(
+          selectByStream(message.stream), hasEndpoints(), filter));
+    if (services.length === 0) {
+      return Promise.reject(new Error(`No matching services found for '${message.stream}'`));
+    } else if (services.length === 1) {
+      return this.invokeService(message, services[0]);
+    }
+    return Promise.all(services.map((service : ClusterService) => this.invokeService(message, service)));
   }
 
   private invokeService(message : Message, service : ClusterService) : Promise<{}> {
