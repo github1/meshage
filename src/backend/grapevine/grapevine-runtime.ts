@@ -5,7 +5,7 @@ import {
   ClusterServiceFilter,
   Address
 } from '../../core';
-import {Addresses, prepareAddresses} from '../address-provider';
+import {Addresses, prepareAddresses} from '../../messaging/address-provider';
 import {Gossiper, ServerAdapter, SocketAdapter} from '@github1/grapevine';
 import debug = require('debug');
 

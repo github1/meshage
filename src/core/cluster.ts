@@ -6,7 +6,7 @@ export interface ClusterServiceEndpoint {
 }
 
 export interface ClusterService {
-  id : string;
+  id? : string;
   stream : string;
   endpoints: ClusterServiceEndpoint[];
 }

@@ -5,12 +5,17 @@ import {
   ServiceRouter
 } from './service-router';
 import {Address} from './address-parser';
-import {Addresses, prepareAddresses} from '../runtime/address-provider';
+import {Addresses, prepareAddresses} from '../messaging/address-provider';
 import {Cluster, ClusterMembership, ClusterServiceEndpoint} from './cluster';
 import {v4} from 'uuid';
 
+export type HandlerRegistration = {
+  stream : string;
+  messageHandler : MessageHandler;
+};
+
 export interface MessageRouterRegistrar {
-  register(stream : string, handler : MessageHandler) : MessageRouterRegistrar;
+  register(... registrations: HandlerRegistration[]) : Promise<void>;
 }
 
 export interface ConnectedMessageRouter extends MessageRouterRegistrar {
@@ -19,10 +24,8 @@ export interface ConnectedMessageRouter extends MessageRouterRegistrar {
   broadcast(message : Message) : Promise<{}>;
 }
 
-export type MessageRouterStartHandler = (err : Error, router? : ConnectedMessageRouter) => void;
-
-export interface MessageRouter extends MessageRouterRegistrar {
-  start(handler? : MessageRouterStartHandler) : void;
+export interface MessageRouter {
+  start() : Promise<ConnectedMessageRouter>;
 }
 
 export class DefaultConnectedMessageRouter implements ConnectedMessageRouter {
@@ -30,19 +33,16 @@ export class DefaultConnectedMessageRouter implements ConnectedMessageRouter {
               private readonly endpoints : ClusterServiceEndpoint[]) {
   }
 
-  public register(stream : string, messageHandler : MessageHandler) : ConnectedMessageRouter {
-    const serviceRegistration : ServiceRegistration = {
-      id: v4(),
-      stream,
-      messageHandler,
-      endpoints: this.endpoints
-    };
-    this.serviceRouter
-      .register(serviceRegistration)
-      .catch((err : Error) => {
-        throw err;
-      });
-    return this;
+  public async register(... registrations: HandlerRegistration[]) : Promise<void> {
+    for (const registration of registrations) {
+      const serviceRegistration : ServiceRegistration = {
+        id: v4(),
+        stream: registration.stream,
+        messageHandler: registration.messageHandler,
+        endpoints: this.endpoints
+      };
+      await this.serviceRouter.register(serviceRegistration);
+    }
   }
 
   public send(message : Message) : Promise<{}> {
@@ -59,7 +59,7 @@ export interface MessageRouterListener {
 }
 
 export abstract class NetworkMessageRouterListener implements MessageRouterListener {
-  private readonly address : (string | number);
+  protected readonly address : (string | number);
 
   protected constructor(address : (string | number)) {
     this.address = address;
@@ -77,11 +77,6 @@ export abstract class NetworkMessageRouterListener implements MessageRouterListe
                                      serviceRouter : ServiceRouter) : Promise<ClusterServiceEndpoint>;
 }
 
-export type HandlerRegistration = {
-  stream : string;
-  messageHandler : MessageHandler;
-};
-
 export class DefaultMessageRouter implements MessageRouter {
   private readonly handlers : HandlerRegistration[] = [];
   private readonly listeners : MessageRouterListener[];
@@ -96,57 +91,23 @@ export class DefaultMessageRouter implements MessageRouter {
     return this;
   }
 
-  public start(handler? : MessageRouterStartHandler) : void {
-    this.cluster
-      .joinCluster()
-      .then((membership : ClusterMembership) => {
-        const serviceRouter : ServiceRouter = new ServiceRouter(membership, this.serviceInvoker);
-        const listeners : MessageRouterListener[] = this.listeners.slice();
-        const startListeners = new Promise<ClusterServiceEndpoint[]>(
-          (resolve : (endpoints: ClusterServiceEndpoint[]) => void, reject : (err : Error) => void) => {
-          const endpoints : ClusterServiceEndpoint[] = [];
-          const listenNext = () => {
-            if (listeners.length > 0) {
-              const listener : MessageRouterListener = listeners.shift();
-              listener
-                .init(membership, serviceRouter)
-                .then((endpoint: ClusterServiceEndpoint) => {
-                  endpoints.push(endpoint);
-                  listenNext();
-                })
-                .catch((err : Error) => {
-                  reject(err);
-                });
-            } else {
-              resolve(endpoints);
-            }
-          };
-          listenNext();
-        });
-        startListeners
-          .then((endpoints : ClusterServiceEndpoint[]) => {
-            Promise.all(
-              this.handlers.map((handlerRegistration : HandlerRegistration) => {
-                const serviceRegistration : ServiceRegistration = {
-                  id: v4(),
-                  ...handlerRegistration,
-                  endpoints
-                };
-                return serviceRouter.register(serviceRegistration);
-              }))
-              .then(() => {
-                if (handler) {
-                  handler(undefined, new DefaultConnectedMessageRouter(serviceRouter, endpoints));
-                }
-              })
-              .catch((err : Error) => {
-                if (handler) {
-                  handler(err);
-                } else {
-                  throw err;
-                }
-              });
-          });
-      });
+  public async start() : Promise<ConnectedMessageRouter> {
+    const membership : ClusterMembership = await this.cluster.joinCluster();
+    const serviceRouter : ServiceRouter = new ServiceRouter(membership, this.serviceInvoker);
+    const listeners : MessageRouterListener[] = this.listeners.slice();
+    const endpoints : ClusterServiceEndpoint[] = [];
+    for (const listener of listeners) {
+      const endpoint: ClusterServiceEndpoint = await listener.init(membership, serviceRouter);
+      endpoints.push(endpoint);
+    }
+    for (const handlerRegistration of this.handlers) {
+      const serviceRegistration : ServiceRegistration = {
+        id: v4(),
+        ...handlerRegistration,
+        endpoints
+      };
+      await serviceRouter.register(serviceRegistration);
+    }
+    return new DefaultConnectedMessageRouter(serviceRouter, endpoints);
   }
 }

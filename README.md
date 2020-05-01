@@ -17,11 +17,10 @@ npm install meshage --save
 Initialize a cluster/node:
 
 ```javascript
-const meshage = require('meshage');
-meshage
-    .init(
+const {init, GrapevineCluster} from 'meshage';
+const conn = await init(
         // Initialize the cluster to join (Grapevine or Consul)
-        new meshage.GrapevineCluster(
+        new GrapevineCluster(
             process.env.CLUSTER_PORT, 
             (process.env.SEEDS || '').split(',')), 
         process.env.HTTP_PORT
@@ -172,7 +171,7 @@ Configures the cluster to join.
 - `address` - (optional) an *host:port* pair (string) or simply a numeric port (number) to listen for HTTP requests on 
 
 ```javascript
-const node = meshage.init(cluster, 8080);
+const conn = await init(cluster, 8080).start();
 ```
 
 #### Cluster Implementations:
@@ -187,9 +186,9 @@ Leverages an implementation of the Gossip protocol to discover nodes and service
 
 ```javascript
 // The initial node in the cluster will not have seeds
-new meshage.GrapevineCluster(9473);
+new GrapevineCluster(9473);
 // Subsequent nodes in the cluster need to specify at least one existing node as a seed
-new meshage.GrapevineCluster(9474, [9473]);
+new GrapevineCluster(9474, [9473]);
 ```
 
 ##### ConsulCluster
@@ -201,7 +200,7 @@ Connects to a consul agent/cluster for service registration.
 - `seeds` - an array of `address` values (following the same behavior as the *address* argument). *The seed address should be point to a consul agents serf_lan port (typically port 8301)*.
 
 ```javascript
-new meshage.ConsulCluster('127.0.0.1:8500');
+new ConsulCluster('127.0.0.1:8500');
 ```
 
 ##### Custom cluster implementations
@@ -230,13 +229,9 @@ Joins the cluster and begins advertising the nodes message handlers.
 - `callback` - (optional) accepts a callback function which is provided a router instance. The router instance can be used to send or broadcast messages to nodes in the cluster.
 
 ```javascript
-node.start(router => {
-   router
-    .send({ stream: 'echo', partitionKey: 'c6c5e7f3-6228-41ce-a7ea-23ac24a08a32', data: 'hello' })
-    .then(res => {
-      console.log(res);
-    });
-});
+const conn = await init(...).start();
+const res = await conn.send({ stream: 'echo', partitionKey: 'c6c5e7f3-6228-41ce-a7ea-23ac24a08a32', data: 'hello' });
+console.log(res);
 ```
 
 The `router` instance passed to the `start` callback exposes two methods:
