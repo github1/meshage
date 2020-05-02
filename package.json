@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.3.95",
+  "version": "0.3.106",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -10,8 +10,7 @@
     "lint": "tslint  --exclude '**/*.js' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build && ./prepare.sh",
     "pretest": "npm run lint",
-    "test": "jest",
-    "test:old": "jest --runInBand --coverage --forceExit",
+    "test": "jest --coverage",
     "test:watch": "jest --watch --runInBand",
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json",
     "build:only": "npm run -s clean && tsc -p tsconfig.release.json"

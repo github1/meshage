@@ -9,8 +9,8 @@ import {
 import dnode = require('dnode');
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
-const logError : debug.IDebugger = debug('meshage:error');
+const log : debug.IDebugger = debug('meshage:dnode');
+const logError : debug.IDebugger = debug('meshage:dnode:error');
 
 export class DnodeMessageListener extends NetworkMessageRouterListener {
 

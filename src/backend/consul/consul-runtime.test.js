@@ -1,11 +1,11 @@
-const consulRuntime = require('./consul-runtime');
+const {ConsulCluster, ConsulClusterMembership} = require('./');
 const os = require('os');
 
 describe('consulRuntime', () => {
   describe('ConsulCluster', () => {
     describe('joining without seeds', () => {
       it('resolves to a ConsulClusterMembership instance with a consulClient', () => {
-        const cluster = new consulRuntime.ConsulCluster(1234);
+        const cluster = new ConsulCluster(1234);
         cluster.consulRef = jest.fn(() => 'consulClient');
         return cluster
           .joinCluster()
@@ -16,7 +16,7 @@ describe('consulRuntime', () => {
     });
     describe('joining with seeds', () => {
       it('it joins the first seed', () => {
-        const cluster = new consulRuntime.ConsulCluster(1234, [2234, 3234]);
+        const cluster = new ConsulCluster(1234, [2234, 3234]);
         const mockConsulClient = {
           agent: {
             join: jest.fn((seed, callback) => {
@@ -33,7 +33,7 @@ describe('consulRuntime', () => {
           });
       });
       it('rejects if unable to join the seed', () => {
-        const cluster = new consulRuntime.ConsulCluster(1234, [2234]);
+        const cluster = new ConsulCluster(1234, [2234]);
         const mockConsulClient = {
           agent: {
             join: jest.fn((seed, callback) => {
@@ -78,7 +78,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        const membership = new consulRuntime.ConsulClusterMembership(mockConsulClient);
+        const membership = new ConsulClusterMembership(mockConsulClient);
         const mockFilter = jest.fn(services => services);
         return membership
           .services(mockFilter)
@@ -104,7 +104,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .services()
           .catch(err => err)
           .then(res => {
@@ -125,7 +125,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .services()
           .catch(err => err)
           .then(res => {
@@ -145,7 +145,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .registerService({
             id: '1234',
             stream: 'foo',
@@ -170,7 +170,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .registerService({ id: '1234', stream: 'foo', endpoints: [] })
           .catch(err => err)
           .then(res => {
@@ -189,7 +189,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .unregisterService('1234')
           .then(() => {
             expect(mockConsulClient.agent.service.deregister).toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe('consulRuntime', () => {
             }
           }
         };
-        return new consulRuntime.ConsulClusterMembership(mockConsulClient)
+        return new ConsulClusterMembership(mockConsulClient)
           .unregisterService('1234')
           .catch(err => err)
           .then(res => {

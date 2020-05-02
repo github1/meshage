@@ -1,5 +1,4 @@
-const {HttpMessageListener} = require('./http-message-listener');
-const {HttpServiceInvoker} = require('./http-service-invoker');
+const {HttpMessageListener, HttpServiceInvoker} = require('./');
 const {promisify} = require('util');
 const {get, post} = require('superagent');
 const getP = promisify(get);

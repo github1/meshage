@@ -12,7 +12,7 @@ import {Addresses, prepareAddresses} from '../../messaging/address-provider';
 import consul = require('consul');
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
+const log : debug.IDebugger = debug('meshage:consul');
 
 type ConsulService = {
   ServiceID? : string;

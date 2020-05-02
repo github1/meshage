@@ -7,6 +7,7 @@ import {RSocketMessageListener, RSocketServiceInvoker} from './messaging/rsocket
 export * from './core';
 export * from './messaging/dnode';
 export * from './messaging/http';
+export * from './messaging/rsocket';
 export * from './backend/grapevine';
 export * from './backend/consul';
 

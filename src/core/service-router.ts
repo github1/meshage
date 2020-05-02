@@ -19,8 +19,8 @@ import {
 } from './address-parser';
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
-const logError : debug.IDebugger = debug('meshage:error');
+const log : debug.IDebugger = debug('meshage:service-router');
+const logError : debug.IDebugger = debug('meshage:service-router:error');
 
 export const getEndpointsByType = (service : ClusterService, endpointType : string) : ClusterServiceEndpoint[] => {
   return service.endpoints

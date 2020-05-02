@@ -1,4 +1,4 @@
-const grapevineRuntime = require('./grapevine-runtime');
+const {GrapevineCluster} = require('./');
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
@@ -21,7 +21,7 @@ describe('grapevineRuntime', () => {
               .map(nodeName => nodes[nodeName])
               .filter(node => node)
               .map(node => node.address);
-            node.cluster = new grapevineRuntime.GrapevineCluster(node.address, joinedNodes);
+            node.cluster = new GrapevineCluster(node.address, joinedNodes);
             node.name = nodeName;
             nodes[nodeName] = node;
             node.cluster.joinCluster()
