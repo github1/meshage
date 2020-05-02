@@ -15,8 +15,8 @@ import {Payload} from 'rsocket-types';
 import RSocketTCPServer from 'rsocket-tcp-server';
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
-const logError : debug.IDebugger = debug('meshage:error');
+const log : debug.IDebugger = debug('meshage:rsocket');
+const logError : debug.IDebugger = debug('meshage:rsocket:error');
 
 export class RSocketMessageListener extends NetworkMessageRouterListener {
 

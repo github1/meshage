@@ -25,6 +25,7 @@ export interface ConnectedMessageRouter extends MessageRouterRegistrar {
 }
 
 export interface MessageRouter {
+  register(stream : string, messageHandler : MessageHandler) : MessageRouter;
   start() : Promise<ConnectedMessageRouter>;
 }
 

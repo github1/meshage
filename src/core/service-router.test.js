@@ -1,5 +1,4 @@
-const serviceRouter = require('./service-router');
-const ServiceRouter = serviceRouter.ServiceRouter;
+const {ServiceRouter, AbstractServiceInvoker} = require('./service-router');
 
 describe('ServiceRouter', () => {
   let svcs;
@@ -100,6 +99,16 @@ describe('ServiceRouter', () => {
       router.unregister('test-stream');
       expect(clusterMembership.unregisterService).toHaveBeenCalled();
       expect(clusterMembership.unregisterService.mock.calls[0][0]).toMatch(/[0-9a-z\-]+/i);
+    });
+  });
+  describe('abstract service invoker', () => {
+    it('does not implement doSend', async () => {
+      expect.assertions(1);
+      try {
+        await new AbstractServiceInvoker('foo').doSend()
+      } catch (err) {
+        expect(err.message).toMatch(/Not implemented/);
+      }
     });
   });
 });

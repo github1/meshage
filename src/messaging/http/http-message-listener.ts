@@ -1,19 +1,18 @@
 import {
-  NetworkMessageRouterListener,
+  Address,
   ClusterMembership,
-  ClusterService,
   ClusterServiceEndpoint,
-  ServiceRouter,
   Message,
-  Address
+  NetworkMessageRouterListener,
+  ServiceRouter
 } from '../../core';
 import debug = require('debug');
 
 import express = require('express');
 import bodyParser = require('body-parser');
 
-const log : debug.IDebugger = debug('meshage');
-const logError : debug.IDebugger = debug('meshage:error');
+const log : debug.IDebugger = debug('meshage:http');
+const logError : debug.IDebugger = debug('meshage:http:error');
 
 const getParam : (req : express.Request, key : string) => string = (req : express.Request, key : string) : string => {
   const params : { [key : string] : string } = (<{ [key : string] : string }>req.params);
@@ -33,15 +32,15 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
     this.server.close();
   }
 
-  public initWithAddress(address : Address, membership : ClusterMembership,
-                         serviceRouter : ServiceRouter) : Promise<ClusterServiceEndpoint> {
+  public async initWithAddress(address : Address, membership : ClusterMembership,
+                               serviceRouter : ServiceRouter) : Promise<ClusterServiceEndpoint> {
 
     const app : express.Application = express();
     app.disable('x-powered-by');
     app.use(bodyParser.json());
 
     const requestHandler : (req : express.Request, res : express.Response) => void =
-      (req : express.Request, res : express.Response) => {
+      async (req : express.Request, res : express.Response) => {
         const stream : string = getParam(req, 'stream');
         const partitionKey : string = getParam(req, 'partitionKey');
         const body : {} = <{}>req.body;
@@ -52,33 +51,26 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
           data: body
         };
         const isBroadcast : boolean = /broadcast/.test(req.path);
-
         log('Handling message', message);
-
-        const serviceRouterCall : Promise<{}> = isBroadcast ? serviceRouter
-          .broadcast(message) : serviceRouter
-          .send(message);
-
-        serviceRouterCall.then((response : {}) => {
-          res.send(response);
-        })
-          .catch((err : Error) => {
-            logError(err);
-            res.status(500)
-              .json({error: err.message});
-          });
-      };
-
-    app.get('/api/services', (req : express.Request, res : express.Response) => {
-      membership.services()
-        .then((services : ClusterService[]) => {
-          res.json(services);
-        })
-        .catch((err : Error) => {
+        try {
+          res.send((await (isBroadcast ? serviceRouter
+            .broadcast(message) : serviceRouter
+            .send(message))));
+        } catch (err) {
           logError(err);
           res.status(500)
-            .json({error: err.message});
-        });
+            .json({error: (<Error> err).message});
+        }
+      };
+
+    app.get('/api/services', async (req : express.Request, res : express.Response) => {
+      try {
+        res.json(await membership.services());
+      } catch (err) {
+        logError(err);
+        res.status(500)
+          .json({error: (<Error> err).message});
+      }
     });
     app.all('/api/health', (req : express.Request, res : express.Response) => {
       res.send({status: 'up'});
@@ -87,7 +79,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
     app.all('/api/broadcast/:stream/:partitionKey', requestHandler);
 
     return new Promise<ClusterServiceEndpoint>((resolve : (value : ClusterServiceEndpoint) => void) => {
-      this.server = app.listen(address.port, address.host,() => {
+      this.server = app.listen(address.port, address.host, () => {
         log(`Started http service on port ${address.port}`);
         resolve({
           endpointType: 'http',

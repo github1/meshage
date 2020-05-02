@@ -1,5 +1,4 @@
-const { DnodeMessageListener } = require('./dnode-message-listener');
-const { DnodeServiceInvoker } = require('./dnode-service-invoker');
+const {DnodeMessageListener, DnodeServiceInvoker} = require('./');
 const {createTest} = require('../message-listener-test-helper');
 
 createTest('DnodeMessageListener',

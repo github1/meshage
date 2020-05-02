@@ -1,5 +1,8 @@
 const {
   init,
+  DefaultMessageRouter,
+  DnodeServiceInvoker,
+  DnodeMessageListener,
   ConsulCluster,
   GrapevineCluster
 } = require('./dist/src');
@@ -23,7 +26,7 @@ const seeds = (process.env.SEED || `${clusterHost}:${initClusterPort}`).split(/,
 
 console.log(`starting on ${clusterAddress} in ${delayStartupMs} ms with ${seeds.length} seed(s) ${seeds}`.trim());
 
-setTimeout(() => {
+setTimeout(async () => {
 
   let cluster;
   if (clusterType === 'consul') {
@@ -32,7 +35,7 @@ setTimeout(() => {
     cluster = new GrapevineCluster(clusterAddress, seeds);
   }
 
-  init(cluster, serviceAddress)
+  await init(cluster, serviceAddress)
     .register('echo', (message, header) => ({
       header,
       echo: message

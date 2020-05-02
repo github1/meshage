@@ -9,7 +9,7 @@ import superagent = require('superagent');
 import superdebug = require('superagent-debugger');
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
+const log : debug.IDebugger = debug('meshage:http');
 
 export type HttpServiceInvokerOptions = {
   secure? : boolean;

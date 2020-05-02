@@ -9,7 +9,7 @@ import {Addresses, prepareAddresses} from '../../messaging/address-provider';
 import {Gossiper, ServerAdapter, SocketAdapter} from '@github1/grapevine';
 import debug = require('debug');
 
-const log : debug.IDebugger = debug('meshage');
+const log : debug.IDebugger = debug('meshage:grapevine');
 
 export class GrapevineClusterMembership implements ClusterMembership {
   private readonly gossiper : Gossiper;
