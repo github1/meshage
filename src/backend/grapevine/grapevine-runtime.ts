@@ -6,10 +6,14 @@ import {
   Address
 } from '../../core';
 import {Addresses, prepareAddresses} from '../../messaging/address-provider';
-import {Gossiper, ServerAdapter, SocketAdapter} from '@github1/grapevine';
+import {Gossiper, PeerState} from '@github1/grapevine';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage:grapevine');
+
+interface ClusterServices {
+  [key:string]: ClusterService;
+}
 
 export class GrapevineClusterMembership implements ClusterMembership {
   private readonly gossiper : Gossiper;
@@ -35,12 +39,12 @@ export class GrapevineClusterMembership implements ClusterMembership {
 
   public services(filter? : ClusterServiceFilter) : Promise<ClusterService[]> {
     let allServices : ClusterService[] = [];
-    const includeServices = (services : {}) => {
+    const includeServices = (services : ClusterServices) => {
       if (services) {
         // merge 'local' service state
         const toInclude : ClusterService[] = Object
           .keys(services)
-          .map((key : string) : ClusterService => <ClusterService>services[key]);
+          .map((key : string) : ClusterService => services[key]);
         toInclude.forEach((service : ClusterService) => {
           if (allServices.filter((existingService : ClusterService) => existingService.id === service.id).length === 0) {
             allServices.push(service);
@@ -49,8 +53,8 @@ export class GrapevineClusterMembership implements ClusterMembership {
       }
     };
     this.gossiper.livePeers()
-      .forEach((addr : string) => {
-        const services : {} = this.gossiper.peerValue(addr, 'services');
+      .forEach((livePeer : PeerState) => {
+        const services : ClusterServices = this.gossiper.peerValue(livePeer.name, 'services');
         // merge services from live peers
         includeServices(services);
       });
@@ -99,22 +103,16 @@ export class GrapevineCluster implements Cluster {
         const port : number = addresses.nodeAddress.port;
         const seeds : string[] = addresses.seedAddresses.map((seed : Address) => seed.toString());
         log('Registering to Gossiper with', addresses);
+        // Set initialVersion to current time to ensures that updates from a restarted peer are accepted by the cluster
+        // by guaranteeing the initial state version is greater than what was
+        // presented in prior (pre-restart) reconciliation attempts.
         const gossiper : Gossiper = new Gossiper({
           port, seeds: seeds,
           address: host,
-          newServerAdapter: () => {
-            return new ServerAdapter({});
-          },
-          newSocketAdapter: () => {
-            return new SocketAdapter({});
-          }
+          initialVersion: new Date().getTime()
         });
         gossiper.start(() => {
-          // Ensures that updates from a restarted peer are accepted by the cluster
-          // by guaranteeing the initial state version is greater than what was
-          // presented in prior (pre-restart) reconciliation attempts.
           log('Gossiper started', addresses.nodeAddress);
-          gossiper.my_state.max_version_seen = new Date().getTime();
           const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
           resolve(membership);
         });

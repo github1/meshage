@@ -1,4 +1,4 @@
-import HashRing = require('hashring'); // tslint:disable-line
+import * as HashRing from 'hashring';
 
 export interface ClusterServiceEndpoint {
   endpointType: string;

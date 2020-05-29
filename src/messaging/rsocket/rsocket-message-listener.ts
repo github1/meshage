@@ -61,7 +61,7 @@ export class RSocketMessageListener extends NetworkMessageRouterListener {
           transport: new RSocketTCPServer(address, BufferEncoders)
         });
         this.server.start();
-        log(`Started rsocket-tcp-server service on port ${address.port}`);
+        log(`Started rsocket-tcp-server service on ${address.host}:${address.port}`);
         resolve({
           endpointType: 'rsocket',
           description: `${address.host}:${address.port}`

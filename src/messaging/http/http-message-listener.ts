@@ -80,7 +80,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
 
     return new Promise<ClusterServiceEndpoint>((resolve : (value : ClusterServiceEndpoint) => void) => {
       this.server = app.listen(address.port, address.host, () => {
-        log(`Started http service on port ${address.port}`);
+        log(`Started http service on ${address.host}:${address.port}`);
         resolve({
           endpointType: 'http',
           description: `http://${address.host}:${address.port}`

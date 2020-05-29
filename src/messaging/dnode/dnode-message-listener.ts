@@ -39,7 +39,7 @@ export class DnodeMessageListener extends NetworkMessageRouterListener {
       });
       try {
         this.server = d.listen(address.port, () => {
-          log(`Started dnode service on port ${address.port}`);
+          log(`Started dnode service on ${address.host}:${address.port}`);
           resolve({
             endpointType: 'dnode',
             description: `${address.host}:${address.port}`
