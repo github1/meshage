@@ -18,7 +18,7 @@
   "author": "John Collier <john.collier4@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@github1/grapevine": "^1.0.6",
+    "@github1/grapevine": "0.3.106",
     "body-parser": "^1.17.2",
     "consul": "^0.33.1",
     "debug": "^3.0.1",
@@ -43,6 +43,7 @@
     "@types/debug": "0.0.30",
     "@types/express": "^4.0.37",
     "@types/get-port": "4.0.1",
+    "@types/hashring": "3.2.1",
     "@types/node": "^8.0.26",
     "@types/rsocket-tcp-client": "0.0.1",
     "@types/rsocket-tcp-server": "0.0.1",
