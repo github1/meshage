@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.3.106",
+  "version": "0.3.100",
   "description": "A simple peer-to-peer service mesh for HTTP based message handlers. Messages sent within the service mesh are consistently partitioned across members of the cluster.",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -18,7 +18,7 @@
   "author": "John Collier <john.collier4@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@github1/grapevine": "0.3.106",
+    "@github1/grapevine": "0.3.100",
     "body-parser": "^1.17.2",
     "consul": "^0.33.1",
     "debug": "^3.0.1",
