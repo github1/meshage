@@ -1,8 +1,8 @@
-const {RSocketMessageListener, RSocketServiceInvoker} = require('./');
+const {rsocketMessaging} = require('./');
 const {createTest} = require('../message-listener-test-helper');
 
 createTest('RSocketMessageListener',
-  port => new RSocketMessageListener(port), new RSocketServiceInvoker(),
+  port => rsocketMessaging(port),
   (router, message) =>
     router.router.send(message),
   (router, message) =>

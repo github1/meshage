@@ -1,4 +1,4 @@
-const CompositeServiceInvoker = require('./composite-service-invoker').CompositeServiceInvoker;
+const { CompositeServiceInvoker } = require('./composite-service-invoker');
 
 describe('CompositeServiceInvoker', () => {
   it('uses the first eligible service invoker', () => {

@@ -1,4 +1,4 @@
-const {HttpMessageListener, HttpServiceInvoker} = require('./');
+const {httpMessaging} = require('./');
 const {promisify} = require('util');
 const {get, post} = require('superagent');
 const getP = promisify(get);
@@ -6,7 +6,7 @@ const postP = promisify(post);
 const {createTest} = require('../message-listener-test-helper');
 
 createTest('HttpMessageListener',
-  port => new HttpMessageListener(`localhost:${port}`), new HttpServiceInvoker(),
+  port => httpMessaging(`localhost:${port}`),
   async (router, message) =>
     (await postP(`http://localhost:${router.port}/api/${message.stream}/${message.partitionKey}`)).body,
   async (router, message) =>

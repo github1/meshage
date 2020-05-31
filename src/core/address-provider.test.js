@@ -1,4 +1,4 @@
-const prepareAddresses = require('./address-provider').prepareAddresses;
+const { prepareAddresses } = require('./address-provider');
 const http = require('http');
 
 describe('address-provider', () => {

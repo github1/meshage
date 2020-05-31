@@ -19,7 +19,7 @@ Initialize a cluster/node:
 ```javascript
 const {init, GrapevineCluster} from 'meshage';
 const conn = await init(
-        // Initialize the cluster to join (Grapevine or Consul)
+        // Initialize the cluster to join
         new GrapevineCluster(
             process.env.CLUSTER_PORT, 
             (process.env.SEEDS || '').split(',')), 

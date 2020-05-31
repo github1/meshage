@@ -74,8 +74,8 @@ describe('grapevineRuntime', () => {
     it('node-b can see node-a\'s services', () => {
       return nodes.b.membership.services().then(services => {
         expect(services.length).toBe(2);
-        expect(services.filter(service => service.id === 'node-a-svc-1')[0].stream).toBe('test-stream');
         expect(services.filter(service => service.id === 'node-b-svc-1')[0].stream).toBe('test-stream');
+        expect(services.filter(service => service.id === 'node-a-svc-1')[0].stream).toBe('test-stream');
       });
     });
     it('unregisters services', () => {

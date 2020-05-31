@@ -2,7 +2,7 @@ import {
   ClusterService,
   Message,
   ServiceInvoker
-} from '../core';
+} from '.';
 
 export class CompositeServiceInvoker implements ServiceInvoker {
   private readonly serviceInvokers : ServiceInvoker[];

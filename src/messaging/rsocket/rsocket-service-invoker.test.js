@@ -1,4 +1,4 @@
-const RSocketServiceInvoker = require('./rsocket-service-invoker').RSocketServiceInvoker;
+const { RSocketServiceInvoker } = require('./rsocket-service-invoker');
 
 describe('RSocketServiceInvoker', () => {
   describe('handles', () => {
