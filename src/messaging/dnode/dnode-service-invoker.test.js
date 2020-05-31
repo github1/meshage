@@ -1,4 +1,4 @@
-const DnodeServiceInvoker = require('./dnode-service-invoker').DnodeServiceInvoker;
+const { DnodeServiceInvoker } = require('./dnode-service-invoker');
 
 describe('DnodeServiceInvoker', () => {
   describe('handles', () => {

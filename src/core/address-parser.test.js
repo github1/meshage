@@ -1,4 +1,4 @@
-const parseAddress = require('./address-parser').parseAddress;
+const { parseAddress } = require('./address-parser');
 const os = require('os');
 
 describe('parseAddress', () => {

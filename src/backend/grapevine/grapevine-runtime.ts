@@ -1,18 +1,31 @@
 import {
+  AbstractServiceInvoker,
+  Address,
   Cluster,
   ClusterMembership,
   ClusterService,
+  ClusterServiceEndpoint,
   ClusterServiceFilter,
-  Address
+  Message,
+  MessageRouterConfigurator,
+  MessageRouterConfiguration,
+  MessageRouterListener,
+  ServiceRouter,
+  Addresses,
+  prepareAddresses
 } from '../../core';
-import {Addresses, prepareAddresses} from '../../messaging/address-provider';
-import {Gossiper, PeerState} from '@github1/grapevine';
+import {
+  Gossiper,
+  GossipMessage,
+  PeerState
+} from '@github1/grapevine';
+import {v4} from 'uuid';
 import debug = require('debug');
 
 const log : debug.IDebugger = debug('meshage:grapevine');
 
 interface ClusterServices {
-  [key:string]: ClusterService;
+  [key : string] : ClusterService;
 }
 
 export class GrapevineClusterMembership implements ClusterMembership {
@@ -65,7 +78,7 @@ export class GrapevineClusterMembership implements ClusterMembership {
     return Promise.resolve(allServices);
   }
 
-  public registerService(registration: ClusterService) : Promise<void> {
+  public registerService(registration : ClusterService) : Promise<void> {
     this.state.services = this.state.services || {};
     this.state.services[registration.id] = JSON.parse(JSON.stringify(registration));
     this.updateState();
@@ -88,11 +101,81 @@ export class GrapevineClusterMembership implements ClusterMembership {
   }
 }
 
-export class GrapevineCluster implements Cluster {
+interface GrapevinePromiseDeferred {
+  resolve(val? : {}): void;
+  reject(error? : Error): void;
+}
+
+interface GrapevineMessage extends GossipMessage {
+  gvmid: string;
+}
+
+class GrapevineServiceInvoker extends AbstractServiceInvoker implements MessageRouterListener {
+  private readonly promises : { [key : string] : GrapevinePromiseDeferred } = {};
+
+  constructor(private readonly gossiper : Gossiper) {
+    super('grapevine');
+  }
+
+  public init(membership : ClusterMembership, serviceRouter : ServiceRouter) : Promise<ClusterServiceEndpoint> {
+    this.gossiper.on('custom_message', (msg : GrapevineMessage) => {
+      const gvmid = msg.gvmid;
+      const deferred : GrapevinePromiseDeferred = this.promises[gvmid];
+      if (deferred) {
+        // resolve response message
+        // tslint:disable-next-line
+        delete this.promises[gvmid];
+        deferred.resolve(<Message>msg.message);
+      } else {
+        serviceRouter
+          .send(<Message>msg.message)
+          .then((response: {}) => {
+            return this.gossiper
+              .sendCustomMessage(msg.from, response, {gvmid: gvmid});
+          })
+          .catch((err: Error) => {
+            log(err);
+          });
+      }
+    });
+    return Promise.resolve({
+      endpointType: 'grapevine',
+      description: this.gossiper.peerName
+    });
+  }
+
+  protected doSend(
+    address : Address,
+    message : Message,
+    service : ClusterService,
+    endpoint : ClusterServiceEndpoint) : Promise<{}> {
+    const targetSeed = endpoint.description;
+    const gvmid = v4();
+    // tslint:disable-next-line
+    const promise = new Promise((resolve: (res: any) => void, reject: (err: Error) => void) => {
+      this.promises[gvmid] = {resolve, reject};
+    });
+    this.gossiper
+      .sendCustomMessage(targetSeed, message, { gvmid })
+      .catch((err: Error) => {
+        const deferred : GrapevinePromiseDeferred = this.promises[gvmid];
+        if (deferred) {
+          // tslint:disable-next-line
+          delete this.promises[gvmid];
+          deferred.reject(err);
+        }
+      });
+    return promise;
+  }
+}
+
+export class GrapevineCluster implements Cluster, MessageRouterConfigurator {
 
   private readonly addresses : Promise<Addresses>;
+  private gossiper : Gossiper;
+  private messaging : GrapevineServiceInvoker;
 
-  constructor(address : (string | number), seeds : (string | number)[] = []) {
+  constructor(address : (string | number), seeds : (string | number)[] = [], private readonly networks? : string[]) {
     this.addresses = prepareAddresses(address, seeds);
   }
 
@@ -106,18 +189,31 @@ export class GrapevineCluster implements Cluster {
         // Set initialVersion to current time to ensures that updates from a restarted peer are accepted by the cluster
         // by guaranteeing the initial state version is greater than what was
         // presented in prior (pre-restart) reconciliation attempts.
-        const gossiper : Gossiper = new Gossiper({
-          port, seeds: seeds,
+        this.gossiper = new Gossiper({
+          port,
+          seeds: seeds,
           address: host,
+          networks: this.networks,
           initialVersion: new Date().getTime()
         });
-        gossiper.start(() => {
+        this.messaging = new GrapevineServiceInvoker(this.gossiper);
+        this.gossiper.start(() => {
           log('Gossiper started', addresses.nodeAddress);
-          const membership : GrapevineClusterMembership = new GrapevineClusterMembership(gossiper);
+          const membership : GrapevineClusterMembership = new GrapevineClusterMembership(this.gossiper);
           resolve(membership);
         });
       });
     });
+  }
+
+  public stop() {
+    this.gossiper.stop(() => {
+      // nothing
+    });
+  }
+
+  public configure(config : MessageRouterConfiguration) {
+    config(this.messaging, this.messaging);
   }
 
 }

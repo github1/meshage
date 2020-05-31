@@ -1,8 +1,8 @@
-const {DnodeMessageListener, DnodeServiceInvoker} = require('./');
+const {dnodeMessaging} = require('./');
 const {createTest} = require('../message-listener-test-helper');
 
 createTest('DnodeMessageListener',
-  port => new DnodeMessageListener(port), new DnodeServiceInvoker(),
+  port => dnodeMessaging(port),
   (router, message) =>
     router.router.send(message),
   (router, message) =>

@@ -1,4 +1,4 @@
-const HttpServiceInvoker = require('./http-service-invoker').HttpServiceInvoker;
+const { HttpServiceInvoker } = require('./http-service-invoker');
 const express = require('express');
 const bodyParser = require('body-parser');
 

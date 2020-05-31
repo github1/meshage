@@ -2,7 +2,7 @@ import {
   Address,
   parseAddress,
   parseAddresses
-} from '../core';
+} from './';
 import { getPortPromise } from 'portfinder';
 
 export interface Addresses {

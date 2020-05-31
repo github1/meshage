@@ -1,12 +1,25 @@
-import {Message, MessageHandler} from './message';
+import {
+  Message,
+  MessageHandler
+} from './message';
 import {
   ServiceInvoker,
   ServiceRegistration,
   ServiceRouter
 } from './service-router';
+import {
+  CompositeServiceInvoker
+} from './composite-service-invoker';
 import {Address} from './address-parser';
-import {Addresses, prepareAddresses} from '../messaging/address-provider';
-import {Cluster, ClusterMembership, ClusterServiceEndpoint} from './cluster';
+import {
+  Addresses,
+  prepareAddresses
+} from './address-provider';
+import {
+  Cluster,
+  ClusterMembership,
+  ClusterServiceEndpoint
+} from './cluster';
 import {v4} from 'uuid';
 
 export type HandlerRegistration = {
@@ -15,7 +28,7 @@ export type HandlerRegistration = {
 };
 
 export interface MessageRouterRegistrar {
-  register(... registrations: HandlerRegistration[]) : Promise<void>;
+  register(...registrations : HandlerRegistration[]) : Promise<void>;
 }
 
 export interface ConnectedMessageRouter extends MessageRouterRegistrar {
@@ -26,7 +39,42 @@ export interface ConnectedMessageRouter extends MessageRouterRegistrar {
 
 export interface MessageRouter {
   register(stream : string, messageHandler : MessageHandler) : MessageRouter;
+
   start() : Promise<ConnectedMessageRouter>;
+}
+
+export interface MessageRouterConfiguration {
+  (serviceInvoker : ServiceInvoker, listener : MessageRouterListener);
+}
+
+export interface MessageRouterConfigurator {
+  configure(config : MessageRouterConfiguration);
+  stop();
+}
+
+// tslint:disable-next-line:no-any
+export const isMessageRouterConfigurator = (obj: any): obj is MessageRouterConfigurator => {
+  // tslint:disable-next-line:no-unsafe-any
+  return 'configure' in obj;
+};
+
+interface Stoppable {
+  stop(): void;
+}
+
+export class DefaultMessageRouterConfigurator implements MessageRouterConfigurator {
+  constructor(private readonly serviceInvoker : ServiceInvoker, private readonly listener : MessageRouterListener) {
+  }
+
+  public configure(config : MessageRouterConfiguration) {
+    config(this.serviceInvoker, this.listener);
+  }
+
+  public stop() {
+    if ('stop' in this.listener) {
+      (<Stoppable>this.listener).stop();
+    }
+  }
 }
 
 export class DefaultConnectedMessageRouter implements ConnectedMessageRouter {
@@ -34,7 +82,7 @@ export class DefaultConnectedMessageRouter implements ConnectedMessageRouter {
               private readonly endpoints : ClusterServiceEndpoint[]) {
   }
 
-  public async register(... registrations: HandlerRegistration[]) : Promise<void> {
+  public async register(...registrations : HandlerRegistration[]) : Promise<void> {
     for (const registration of registrations) {
       const serviceRegistration : ServiceRegistration = {
         id: v4(),
@@ -79,12 +127,12 @@ export abstract class NetworkMessageRouterListener implements MessageRouterListe
 }
 
 export class DefaultMessageRouter implements MessageRouter {
+  private readonly configurators : MessageRouterConfigurator[];
   private readonly handlers : HandlerRegistration[] = [];
-  private readonly listeners : MessageRouterListener[];
 
   constructor(private readonly cluster : Cluster,
-              private readonly serviceInvoker : ServiceInvoker, ...listeners : MessageRouterListener[]) {
-    this.listeners = listeners;
+              ...config : MessageRouterConfigurator[]) {
+    this.configurators = config;
   }
 
   public register(stream : string, messageHandler : MessageHandler) : MessageRouter {
@@ -94,11 +142,22 @@ export class DefaultMessageRouter implements MessageRouter {
 
   public async start() : Promise<ConnectedMessageRouter> {
     const membership : ClusterMembership = await this.cluster.joinCluster();
-    const serviceRouter : ServiceRouter = new ServiceRouter(membership, this.serviceInvoker);
-    const listeners : MessageRouterListener[] = this.listeners.slice();
+    const configurators : MessageRouterConfigurator[] = this.configurators;
+    if (isMessageRouterConfigurator(this.cluster)) {
+      configurators.unshift(this.cluster);
+    }
+    const serviceInvokers : ServiceInvoker[] = [];
+    const messageListeners : MessageRouterListener[] = [];
+    configurators.forEach((configurator : MessageRouterConfigurator) => {
+      configurator.configure((serviceInvoker : ServiceInvoker, listener : MessageRouterListener) => {
+        serviceInvokers.push(serviceInvoker);
+        messageListeners.push(listener);
+      });
+    });
+    const serviceRouter : ServiceRouter = new ServiceRouter(membership, new CompositeServiceInvoker(...serviceInvokers));
     const endpoints : ClusterServiceEndpoint[] = [];
-    for (const listener of listeners) {
-      const endpoint: ClusterServiceEndpoint = await listener.init(membership, serviceRouter);
+    for (const listener of messageListeners) {
+      const endpoint : ClusterServiceEndpoint = await listener.init(membership, serviceRouter);
       endpoints.push(endpoint);
     }
     for (const handlerRegistration of this.handlers) {

@@ -6,9 +6,10 @@ import {
   ClusterServiceFilter,
   getEndpointsByType,
   Address,
-  parseAddress
+  parseAddress,
+  Addresses,
+  prepareAddresses
 } from '../../core';
-import {Addresses, prepareAddresses} from '../../messaging/address-provider';
 import consul = require('consul');
 import debug = require('debug');
 

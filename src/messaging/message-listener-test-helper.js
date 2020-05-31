@@ -1,8 +1,7 @@
 const {DefaultMessageRouter, FakeCluster} = require('../core');
 
 exports.createTest = (name,
-                      listenerFactory,
-                      serviceInvoker,
+                      messaging,
                       send,
                       broadcast,
                       moreTest) => {
@@ -12,13 +11,12 @@ exports.createTest = (name,
     beforeAll(async () => {
       for (const routerName of ['router-a', 'router-b']) {
         const port = await getPort();
-        const listener = listenerFactory(port);
+        const messagingConfig = messaging(port);
         const router = await new DefaultMessageRouter(
           cluster,
-          serviceInvoker,
-          listener)
+          messagingConfig)
           .start();
-        routers[routerName] = {port, listener, router};
+        routers[routerName] = {port, messagingConfig, router};
         await router.register({
           stream: 'some-stream',
           messageHandler: (data, header) => {
@@ -29,7 +27,7 @@ exports.createTest = (name,
     });
     afterAll(() => {
       Object.keys(routers).forEach(routerName => {
-        routers[routerName].listener.stop();
+        routers[routerName].messagingConfig.stop();
       });
     });
     it('invokes services', async () => {
