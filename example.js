@@ -1,8 +1,5 @@
 const {
   init,
-  DefaultMessageRouter,
-  DnodeServiceInvoker,
-  DnodeMessageListener,
   ConsulCluster,
   GrapevineCluster
 } = require('./dist/src');
