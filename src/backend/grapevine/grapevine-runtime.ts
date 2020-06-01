@@ -16,6 +16,7 @@ import {
 } from '../../core';
 import {
   Gossiper,
+  GossiperOptions,
   GossipMessage,
   PeerState
 } from '@github1/grapevine';
@@ -172,10 +173,19 @@ class GrapevineServiceInvoker extends AbstractServiceInvoker implements MessageR
 export class GrapevineCluster implements Cluster, MessageRouterConfigurator {
 
   private readonly addresses : Promise<Addresses>;
+  private readonly gossiperOptions : GossiperOptions;
   private gossiper : Gossiper;
   private messaging : GrapevineServiceInvoker;
 
-  constructor(address : (string | number), seeds : (string | number)[] = [], private readonly networks? : string[]) {
+  constructor(options: GossiperOptions)
+  constructor(options: number | GossiperOptions) {
+    this.gossiperOptions = typeof options === 'number' ? {port: options} : options;
+    let address = `${options}`;
+    let seeds: string[] = [];
+    if (typeof options !== 'number') {
+      address = options.address ? `${options.address}:${options.port}` : `${options.port}`;
+      seeds = options.seeds;
+    }
     this.addresses = prepareAddresses(address, seeds);
   }
 
@@ -186,16 +196,14 @@ export class GrapevineCluster implements Cluster, MessageRouterConfigurator {
         const port : number = addresses.nodeAddress.port;
         const seeds : string[] = addresses.seedAddresses.map((seed : Address) => seed.toString());
         log('Registering to Gossiper with', addresses);
+        this.gossiperOptions.address = host;
+        this.gossiperOptions.port = port;
+        this.gossiperOptions.seeds = seeds;
         // Set initialVersion to current time to ensures that updates from a restarted peer are accepted by the cluster
         // by guaranteeing the initial state version is greater than what was
         // presented in prior (pre-restart) reconciliation attempts.
-        this.gossiper = new Gossiper({
-          port,
-          seeds: seeds,
-          address: host,
-          networks: this.networks,
-          initialVersion: new Date().getTime()
-        });
+        this.gossiperOptions.initialVersion = new Date().getTime();
+        this.gossiper = new Gossiper(this.gossiperOptions);
         this.messaging = new GrapevineServiceInvoker(this.gossiper);
         this.gossiper.start(() => {
           log('Gossiper started', addresses.nodeAddress);

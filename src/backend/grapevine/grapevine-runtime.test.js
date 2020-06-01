@@ -15,13 +15,17 @@ describe('grapevineRuntime', () => {
             const node = {
               name: nodeName,
               port: foundPort,
-              address: `127.0.0.1:${foundPort}`
+              address: `127.0.0.1`
             };
             const joinedNodes = Object.keys(nodes)
               .map(nodeName => nodes[nodeName])
               .filter(node => node)
-              .map(node => node.address);
-            node.cluster = new GrapevineCluster(node.address, joinedNodes);
+              .map(node => `${node.address}:${node.port}`);
+            node.cluster = new GrapevineCluster({
+              address: node.address,
+              port: node.port,
+              seeds: joinedNodes
+            });
             node.name = nodeName;
             nodes[nodeName] = node;
             node.cluster.joinCluster()
