@@ -20,7 +20,8 @@ exports.createTest = (name,
         await router.register({
           stream: 'some-stream',
           messageHandler: (data, header) => {
-            return {message: `hello from ${routerName}`, header};
+            const metaStr = header.meta ? `: ${Object.keys(header.meta).map((key) => `${key}=${header.meta[key]}`)}` : '';
+            return {message: `hello from ${routerName}${metaStr}`, header};
           }
         });
       }

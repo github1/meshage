@@ -48,7 +48,12 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
           stream,
           partitionKey,
           serviceId: req.get('X-Service-ID'),
-          data: body
+          data: body,
+          meta: Object.keys(req.headers)
+            .reduce((meta : { [key : string] : string }, header : string) => {
+              meta[header] = req.header(header);
+              return meta;
+            }, {})
         };
         const isBroadcast : boolean = /broadcast/.test(req.path);
         log('Handling message', message);
@@ -59,7 +64,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
         } catch (err) {
           logError(err);
           res.status(500)
-            .json({error: (<Error> err).message});
+            .json({error: (<Error>err).message});
         }
       };
 
@@ -69,7 +74,7 @@ export class HttpMessageListener extends NetworkMessageRouterListener {
       } catch (err) {
         logError(err);
         res.status(500)
-          .json({error: (<Error> err).message});
+          .json({error: (<Error>err).message});
       }
     });
     app.all('/api/health', (req : express.Request, res : express.Response) => {
