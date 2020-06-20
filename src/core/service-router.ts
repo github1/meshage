@@ -84,7 +84,8 @@ const headerOnly = (message : Message) : MessageHeader => {
   return {
     serviceId: message.serviceId,
     stream: message.stream,
-    partitionKey: message.partitionKey
+    partitionKey: message.partitionKey,
+    meta: message.meta
   };
 };
 
