@@ -1,7 +1,6 @@
 module.exports = {
   verbose: true,
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/jestSetup.js'],
   transform: {
     "^.+\\.ts$": 'ts-jest'
   },
