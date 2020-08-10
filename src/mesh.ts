@@ -74,7 +74,7 @@ export class MeshBase implements Mesh {
     meshes.push(this);
   }
 
-  public static async shutdownAll() {
+  public static async SHUTDOWN_ALL() {
     for (const mesh of meshes) {
       await mesh.shutdown();
     }
@@ -141,8 +141,7 @@ export abstract class MeshBackendBase implements MeshBackend {
         if (attempts === 0) {
           throw new MeshRegistrationTimeoutError();
         } else {
-          // tslint:disable-next-line:typedef
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve: () => void) => setTimeout(resolve, 100));
         }
       }
     }

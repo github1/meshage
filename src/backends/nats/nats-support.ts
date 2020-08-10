@@ -170,8 +170,7 @@ class NatsMeshBackend extends MeshBackendBase {
         if (attempts === 0) {
           throw err;
         } else {
-          // tslint:disable-next-line:typedef
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve: () => void) => setTimeout(resolve, 500));
         }
       }
       this.register(SUBJECT_NATS_MONITOR, SUBJECT_MESSAGE_SUBSCRIPTIONS, (msg : { subscriptions: string[] }) => {

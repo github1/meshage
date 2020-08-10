@@ -46,7 +46,7 @@ class HttpMeshBackend extends MeshBackendBase {
     }
     // tslint:disable-next-line:no-unsafe-any
     const messageName : string = req.query.messageName ? `${req.query.messageName}` : req.body.name;
-    const messageBody : HttpMessage<T> = {
+    return {
       name: messageName,
       payload: {...req.body},
       http: {
@@ -58,7 +58,6 @@ class HttpMeshBackend extends MeshBackendBase {
         query: req.query as any
       }
     };
-    return messageBody;
   }
 
   // tslint:disable-next-line:no-any
