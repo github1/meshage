@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf coverage dist tmp",
     "watch": "tsc -w -p tsconfig.release.json",
-    "lint": "tslint  --exclude '**/*test*.ts' --exclude '**/*fake*.ts' --project 'tsconfig.json'",
+    "lint": "tslint --exclude '**/*test*.ts' --exclude '**/*fake*.ts' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build && ./prepare.sh",
     "pretest": "npm run lint",
     "test": "jest --coverage",
