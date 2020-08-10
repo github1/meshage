@@ -17,7 +17,7 @@ describe('nats-support', () => {
     ports = await startContainer('nats', 'alpine3.11', '4222/tcp', '8222/tcp');
   }, 20000);
   afterEach(async () => {
-    await MeshBase.shutdownAll();
+    await MeshBase.SHUTDOWN_ALL();
     stopContainers();
   });
   it('can broadcast messages and receive all replies', async () => {
