@@ -3,7 +3,6 @@ export type ConstructorOf<T> = new (...args: any[]) => T;
 
 // tslint:disable-next-line:no-any
 export interface SubjectMessage {
-  name: string;
   // tslint:disable-next-line:no-any
   [key:string]: any;
 }
@@ -16,6 +15,7 @@ export interface SubjectMessageOptions {
 export interface SubjectMessageHeader {
   uid: string;
   subject: string;
+  name: string;
   partitionKey?: string;
 }
 

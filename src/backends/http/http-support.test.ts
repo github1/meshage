@@ -1,6 +1,7 @@
 import {
   mesh,
-  Mesh
+  Mesh,
+  SubjectMessageHeader
 } from '../../';
 import {http} from './http-support';
 import {fake, shutdownAll} from '../fake-backend';
@@ -93,6 +94,27 @@ describe('http-support', () => {
       .toBe(0);
     expect(handlerCalled)
       .toBe(true);
+  });
+  it('can send parameters which are extracted from the body', async () => {
+    await p1.subject('test-sub-2')
+      // tslint:disable-next-line:no-any
+      .on('some-val', (msg : any, header : SubjectMessageHeader) => {
+        return { name: header.name, pk: header.partitionKey };
+      })
+      .awaitRegistration();
+    const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/{body.key}-123?messageName={body.something}`,
+      {
+        headers: {
+          'content-type': 'application/json'
+        },
+        method: 'post',
+        body: JSON.stringify({key: 'abc', something: 'some-val'})
+      });
+    const resJson = await res.json();
+    expect(resJson.name)
+      .toBe('some-val');
+    expect(resJson.pk)
+      .toBe('abc-123');
   });
   it('requires a message name', async () => {
     await p1.subject('test-sub-2')
