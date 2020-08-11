@@ -47,7 +47,7 @@ const n1 = mesh(nats({
 
 ## HTTP Support
 
-Message may also optionally be sent & received with an HTTP listener by wrapping the supplied backend:
+Messages may also optionally be sent & received with an HTTP listener by wrapping the supplied backend:
 
 ```javascript
 const {mesh, nats, http} from 'meshage';
