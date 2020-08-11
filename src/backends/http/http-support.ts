@@ -29,12 +29,14 @@ class HttpMeshBackend extends MeshBackendBase {
     this.handlers = this.meshPrivateInternal['handlers'];
   }
 
-  private static processParameters(reqParams : { [key : string] : string } = {}, reqBody : {}) {
+  private static processParameters(reqParams : { [key : string] : string } = {}, reqBody : {}) : { [key : string] : string } {
     return Object.keys(reqParams)
       .reduce((params : { [key : string] : string }, key : string) => {
         params[key] = reqParams[key].replace(/{([^}]+)}/g, (m : string, token : string) => {
-          const paramName = token.replace(/^body\./, '');
-          return reqBody[paramName];
+          // tslint:disable-next-line:no-parameter-reassignment
+          token = token.replace(/^body\./, '');
+          // tslint:disable-next-line:no-unsafe-any
+          return reqBody[token] || token;
         });
         return params;
       }, {});
@@ -55,8 +57,9 @@ class HttpMeshBackend extends MeshBackendBase {
         reqUrl = reqUrl.replace(/%3F/g, '?');
       }
     }
+    // tslint:disable-next-line:no-unsafe-any
     const params : { [key : string] : string } = this.processParameters(req.params, req.body);
-    // tslint:disable-next-line:no-any
+    // tslint:disable-next-line:no-unsafe-any no-any
     const query : { [key : string] : string } = this.processParameters(req.query as any, req.body);
     // tslint:disable-next-line:no-unsafe-any
     const messageName : string = query.messageName ? `${query.messageName}` : req.body.name;

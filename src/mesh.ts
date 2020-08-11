@@ -198,6 +198,7 @@ export abstract class MeshBackendBase implements MeshBackend {
     const messageHeader : SubjectMessageHeader = {
       uid: v4(),
       subject,
+      // tslint:disable-next-line:no-unsafe-any
       name: message.name || message.constructor.name,
       partitionKey
     };
