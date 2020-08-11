@@ -29,6 +29,17 @@ class HttpMeshBackend extends MeshBackendBase {
     this.handlers = this.meshPrivateInternal['handlers'];
   }
 
+  private static processParameters(reqParams : { [key : string] : string } = {}, reqBody : {}) {
+    return Object.keys(reqParams)
+      .reduce((params : { [key : string] : string }, key : string) => {
+        params[key] = reqParams[key].replace(/{([^}]+)}/g, (m : string, token : string) => {
+          const paramName = token.replace(/^body\./, '');
+          return reqBody[paramName];
+        });
+        return params;
+      }, {});
+  }
+
   private static prepareHttpMessage<T>(req : express.Request) : HttpMessage<T> {
     // tslint:disable-next-line:no-any
     let reqUrl : string;
@@ -44,8 +55,11 @@ class HttpMeshBackend extends MeshBackendBase {
         reqUrl = reqUrl.replace(/%3F/g, '?');
       }
     }
+    const params : { [key : string] : string } = this.processParameters(req.params, req.body);
+    // tslint:disable-next-line:no-any
+    const query : { [key : string] : string } = this.processParameters(req.query as any, req.body);
     // tslint:disable-next-line:no-unsafe-any
-    const messageName : string = req.query.messageName ? `${req.query.messageName}` : req.body.name;
+    const messageName : string = query.messageName ? `${query.messageName}` : req.body.name;
     return {
       name: messageName,
       payload: {...req.body},
@@ -53,9 +67,8 @@ class HttpMeshBackend extends MeshBackendBase {
         headers: req.headers,
         url: req.url,
         publicUrl: reqUrl,
-        params: req.params,
-        // tslint:disable-next-line:no-any
-        query: req.query as any
+        params,
+        query
       }
     };
   }
@@ -131,11 +144,12 @@ class HttpMeshBackend extends MeshBackendBase {
               res.status(400)
                 .send({error: 'Missing message name'});
             } else {
-              const result = await this.send(req.params.subject,
+              const result = await this.send(httpMessage.http.params.subject,
                 undefined,
                 httpMessage,
                 {
-                  wait: req.query.wait === 'true' || req.query.wait === undefined
+                  wait: req.query.wait === 'true' || req.query.wait === undefined,
+                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10)
                 }, true);
               HttpMeshBackend.prepareHttpResponse(result || [], res);
             }
@@ -153,10 +167,13 @@ class HttpMeshBackend extends MeshBackendBase {
                 .send({error: 'Missing message name'});
             } else {
               const result = await this.send(
-                req.params.subject,
-                req.params.partitionKey,
+                httpMessage.http.params.subject,
+                httpMessage.http.params.partitionKey,
                 httpMessage,
-                {},
+                {
+                  wait: req.query.wait === 'true' || req.query.wait === undefined,
+                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10)
+                },
                 false);
               HttpMeshBackend.prepareHttpResponse(result, res);
             }

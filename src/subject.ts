@@ -71,19 +71,14 @@ export class SubjectBase implements Subject {
                        options? : SubjectMessageOptions) : Promise<T> {
     let partitionKey : string;
     let message : SubjectMessage;
-    let optionsToSend = options;
+    let optionsToSend : SubjectMessageOptions;
     if (typeof messageOrPartitionKey === 'string') {
       partitionKey = messageOrPartitionKey;
       message = messageOrOptions as SubjectMessage;
       optionsToSend = options;
-      // return this.meshPrivate
-      //   .send(this.subjectName, messageOrPartitionKey, messageOrOptions as SubjectMessage, options, false);
     } else {
       message = messageOrPartitionKey;
       optionsToSend = messageOrOptions as SubjectMessageOptions;
-    }
-    if (!message.name) {
-      message.name = message.constructor.name;
     }
     return this.meshPrivate
       .send(this.subjectName, partitionKey, message, optionsToSend, false);

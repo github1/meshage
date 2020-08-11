@@ -198,6 +198,7 @@ export abstract class MeshBackendBase implements MeshBackend {
     const messageHeader : SubjectMessageHeader = {
       uid: v4(),
       subject,
+      name: message.name || message.constructor.name,
       partitionKey
     };
     const messageEnvelope : SubjectMessageEnvelope = {
@@ -213,7 +214,7 @@ export abstract class MeshBackendBase implements MeshBackend {
     if (partitionKey && !broadcast) {
       const candidateSubscriptionIds : string[] = this.subscriptionIds
         .filter((subscriptionId : string) => {
-          return subscriptionId.indexOf(`${subject}-${message.name}`) === 0;
+          return subscriptionId.indexOf(`${subject}-${messageHeader.name}`) === 0;
         });
       if (candidateSubscriptionIds.length > 0) {
         const subscriptionId = new HashRing(candidateSubscriptionIds).get(partitionKey);
@@ -257,7 +258,7 @@ export abstract class MeshBackendBase implements MeshBackend {
 
   // tslint:disable-next-line:no-any
   protected async invokeHandler<T>(message : SubjectMessageEnvelope) : Promise<T> {
-    const localLog : debug.Debugger = log.extend(`MeshBackendBase.handler.${message.header.subject}.${message.message.name}`);
+    const localLog : debug.Debugger = log.extend(`MeshBackendBase.handler.${message.header.subject}.${message.header.name}`);
     try {
       // tslint:disable-next-line:no-any
       let response : T;
@@ -268,7 +269,7 @@ export abstract class MeshBackendBase implements MeshBackend {
         }
         if (response === undefined) {
           // tslint:disable-next-line:no-unsafe-any
-          response = await this.handlers[message.header.subject][message.message.name].handler(undefined, message);
+          response = await this.handlers[message.header.subject][message.header.name].handler(undefined, message);
         }
         return response;
       } finally {

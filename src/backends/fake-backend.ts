@@ -115,12 +115,13 @@ class FakeBackend extends MeshBackendBase {
     let eventName = address;
     if (!eventName) {
       if (broadcast) {
-        eventName = `${envelope.header.subject}-${envelope.message.name}`;
+        eventName = `${envelope.header.subject}-${envelope.header.name}`;
       } else {
         const subIdsForSub = instanceSubscriptionIds[process.env.JEST_WORKER_ID]
           .filter((sub : string) => {
-            return sub.startsWith(`${envelope.header.subject}-${envelope.message.name}`);
+            return sub.startsWith(`${envelope.header.subject}-${envelope.header.name}`);
           });
+        // tslint:disable-next-line:insecure-random
         eventName = subIdsForSub[Math.floor(Math.random() * subIdsForSub.length)];
       }
     }

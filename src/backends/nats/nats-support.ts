@@ -83,9 +83,9 @@ class NatsMeshBackend extends MeshBackendBase {
     let natsSubjectToUse : string = address;
     if (!address) {
       if (broadcast) {
-        natsSubjectToUse = `${envelope.header.subject}-${envelope.message.name}-broadcast`;
+        natsSubjectToUse = `${envelope.header.subject}-${envelope.header.name}-broadcast`;
       } else {
-        natsSubjectToUse = `${envelope.header.subject}-${envelope.message.name}-queue-group`;
+        natsSubjectToUse = `${envelope.header.subject}-${envelope.header.name}-queue-group`;
       }
     }
     if (!options.wait) {
