@@ -46,40 +46,41 @@ export async function startContainer(image : string, tag : string, ...ports : st
   try {
     const containerStatus = await container.status();
     console.log('Found existing container', containerStatus);
-    return {};
+    await stopContainers();
   } catch (err) {
-    if (!fetchedImage) {
-      fetchedImage = true;
-      await docker.image.create({}, {fromImage: image, tag: tag})
-        .then(promisifyStream)
-        .then(() => docker.image.get(`${image}:${tag}`)
-          .status());
-    }
-    const createOpts = {
-      Image: `${image}:${tag}`,
-      name: containerName,
-      PortBindings: {}
-    };
-    for (const portDef of ports) {
-      const parts = portDef.split('/');
-      const hostPort = await getPort();
-      createOpts.PortBindings[`${parts[0]}/${parts[1] || 'tcp'}`] = [{HostPort: `${hostPort}`}];
-      testContainerPorts[containerName][parts[0]] = hostPort;
-    }
-    container = await docker.container.create(createOpts);
-    await container.start();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    try {
-      await container.logs({
-        stdout: true,
-        stderr: true
-      })
-        .then(promisifyStream);
-    } catch (err) {
-      // console.log(err);
-    }
-    return testContainerPorts[containerName];
+    // ignore
   }
+  if (!fetchedImage) {
+    fetchedImage = true;
+    await docker.image.create({}, {fromImage: image, tag: tag})
+      .then(promisifyStream)
+      .then(() => docker.image.get(`${image}:${tag}`)
+        .status());
+  }
+  const createOpts = {
+    Image: `${image}:${tag}`,
+    name: containerName,
+    PortBindings: {}
+  };
+  for (const portDef of ports) {
+    const parts = portDef.split('/');
+    const hostPort = await getPort();
+    createOpts.PortBindings[`${parts[0]}/${parts[1] || 'tcp'}`] = [{HostPort: `${hostPort}`}];
+    testContainerPorts[containerName][parts[0]] = hostPort;
+  }
+  container = await docker.container.create(createOpts);
+  await container.start();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    await container.logs({
+      stdout: true,
+      stderr: true
+    })
+      .then(promisifyStream);
+  } catch (err) {
+    // ignore
+  }
+  return testContainerPorts[containerName];
 }
 
 export function stopContainers() {

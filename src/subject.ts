@@ -1,17 +1,31 @@
 import {
   ConstructorOf,
   SubjectMessage,
-  SubjectMessageOptions,
-  SubjectMessageHandler
+  SubjectMessageHandler,
+  SubjectMessageOptions
 } from './messages';
-import { MeshBackend } from './mesh';
+import {MeshBackend} from './mesh';
+
+export const PSEUDO_MESSAGE_NS : string = 'meshage.subject.pseudo';
+export const PSEUDO_MESSAGE_BEFORE : string = [PSEUDO_MESSAGE_NS, 'before'].join('.');
+export const PSEUDO_MESSAGE_AFTER : string = [PSEUDO_MESSAGE_NS, 'after'].join('.');
 
 export interface Subject {
+
+  /**
+   * Registers a handler which is run before any message.
+   */
+  before<T>(handler : SubjectMessageHandler<T>) : Subject;
 
   /**
    * Registers a handler.
    */
   on<T>(name : (string | ConstructorOf<T>), handler : SubjectMessageHandler<T>) : Subject;
+
+  /**
+   * Registers a handler which is run after any message.
+   */
+  after<T>(handler : SubjectMessageHandler<T>) : Subject;
 
   /**
    * Sends a message to all handlers.
@@ -46,7 +60,7 @@ export class SubjectBase implements Subject {
   }
 
   public before<T>(handler : SubjectMessageHandler<T>) : Subject {
-    this.meshPrivate.register(this.subjectName, '::before', handler);
+    this.meshPrivate.register(this.subjectName, PSEUDO_MESSAGE_BEFORE, handler);
     return this;
   }
 
@@ -56,7 +70,7 @@ export class SubjectBase implements Subject {
   }
 
   public after<T>(handler : SubjectMessageHandler<T>) : Subject {
-    this.meshPrivate.register(this.subjectName, '::after', handler);
+    this.meshPrivate.register(this.subjectName, PSEUDO_MESSAGE_AFTER, handler);
     return this;
   }
 

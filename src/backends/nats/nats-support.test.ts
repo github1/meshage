@@ -3,22 +3,25 @@ import {
   Mesh,
   MeshBase
 } from '../../';
-import {
-  nats
-} from './nats-support';
+import {nats} from './nats-support';
 import {
   startContainer,
   stopContainers
 } from './docker-test-helper';
+import {commonTests} from '../../mesh-common-test';
 
 describe('nats-support', () => {
   let ports;
-  beforeEach(async () => {
+  beforeAll(async () => {
     ports = await startContainer('nats', 'alpine3.11', '4222/tcp', '8222/tcp');
-  }, 20000);
-  afterEach(async () => {
+  }, 10000);
+  afterAll(async () => {
+    await stopContainers();
+  });
+  commonTests(() => mesh(nats(`nats://localhost:${ports['4222']}`)), async () => {
+    ports = await startContainer('nats', 'alpine3.11', '4222/tcp', '8222/tcp');
+  }, async () => {
     await MeshBase.SHUTDOWN_ALL();
-    stopContainers();
   });
   it('can broadcast messages and receive all replies', async () => {
     const p1 : Mesh = mesh(nats(`nats://localhost:${ports['4222']}`));
@@ -35,7 +38,7 @@ describe('nats-support', () => {
       .toBe(3);
     expect(res[0])
       .toEqual({echo: {name: 'echo'}});
-  });
+  }, 10000);
   it('can send messages to a member of a queue group', async () => {
     const p1 : Mesh = mesh(nats(`nats://localhost:${ports['4222']}`));
     for (let i = 0; i < 3; i++) {
@@ -50,7 +53,7 @@ describe('nats-support', () => {
       .send({name: 'echo'});
     expect(res.echo.name)
       .toBe('echo');
-  });
+  }, 10000);
   it('can send messages partitioned', async () => {
     const p1 : Mesh = mesh(nats({
       servers: [`nats://localhost:${ports['4222']}`],
