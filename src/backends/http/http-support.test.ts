@@ -24,7 +24,8 @@ describe('http-support', () => {
       // tslint:disable-next-line:no-any
       .on('test-http', (msg : any) => {
         return {echo: msg};
-      });
+      })
+      .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123`,
       {
         headers: {
@@ -42,7 +43,8 @@ describe('http-support', () => {
       // tslint:disable-next-line:no-any
       .on('test-http', (msg : any) => {
         return {echo: msg};
-      });
+      })
+      .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123?messageName=test-http`,
       {
         headers: {
@@ -60,7 +62,8 @@ describe('http-support', () => {
       // tslint:disable-next-line:no-any
       .on('test-http', (msg : any) => {
         return {echo: msg};
-      });
+      })
+      .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/broadcast/test-sub-2?messageName=test-http`,
       {
         headers: {
@@ -80,7 +83,8 @@ describe('http-support', () => {
       .on('test-http', (msg : any) => {
         handlerCalled = true;
         return {echo: msg};
-      });
+      })
+      .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/broadcast/test-sub-2?messageName=test-http&wait=false`,
       {
         headers: {
@@ -121,7 +125,8 @@ describe('http-support', () => {
       // tslint:disable-next-line:no-any
       .on('test-http', (msg : any) => {
         return {echo: msg};
-      });
+      })
+      .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123`,
       {
         headers: {

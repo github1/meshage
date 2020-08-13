@@ -13,6 +13,7 @@ import {
   Mesh,
   MeshBackendBase,
   MeshBackendProvider,
+  MeshError,
   MeshSubjectHandlerRegistration,
   SubjectMessageEnvelope,
   SubjectMessageOptions
@@ -51,8 +52,9 @@ class NatsMeshBackend extends MeshBackendBase {
     const localLog : debug.Debugger = log.extend('NatsMeshBackend.shutdown');
     if (this.natsConnection) {
       try {
-        localLog('Closing nats connection');
+        localLog('Closing nats connection', this.instanceId);
         await this.natsConnection.drain();
+        this.natsConnection.close();
       } catch (err) {
         localLog('Failed to close nats connection', err);
       }
@@ -142,10 +144,12 @@ class NatsMeshBackend extends MeshBackendBase {
       const msgCallback : MsgCallback = async (err : NatsError | null, msg : Msg) => {
         // tslint:disable-next-line:no-unsafe-any
         const subjectMessageEnvelope : SubjectMessageEnvelope = JSON.parse(msg.data);
-        const response = await this.invokeHandler(subjectMessageEnvelope);
-        if (msg.reply) {
-          this.natsConnection.publish(msg.reply, JSON.stringify(response));
-        }
+        // tslint:disable-next-line:no-any
+        await this.invokeHandler(subjectMessageEnvelope, (error : MeshError, result: any) => {
+          if (msg.reply) {
+            this.natsConnection.publish(msg.reply, JSON.stringify(error ? error.serialize() : result));
+          }
+        });
       };
       await this.makeSubscription(`${registration.subject}-${registration.messageName}-broadcast`, msgCallback);
       await this.makeSubscription(`${registration.subject}-${registration.messageName}-queue-group`, msgCallback, {queue: `${registration.subject}-qg`});

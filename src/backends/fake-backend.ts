@@ -1,6 +1,7 @@
 import {
   MeshBackendBase,
   MeshBackendProvider,
+  MeshError,
   SubjectMessageEnvelope,
   SubjectMessageOptions
 } from '../';
@@ -40,7 +41,7 @@ class FakeBackend extends MeshBackendBase {
   }
 
   public async shutdown() : Promise<void> {
-    instanceSubscriptionIds[process.env.JEST_WORKER_ID] = instanceSubscriptionIds[process.env.JEST_WORKER_ID]
+    instanceSubscriptionIds[process.env.JEST_WORKER_ID] = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
       .filter((sub : string) => sub.indexOf(this.instanceId) < 0);
     instances[process.env.JEST_WORKER_ID] = instances[process.env.JEST_WORKER_ID]
       .filter((instance : FakeBackend) => instance !== this);
@@ -81,14 +82,16 @@ class FakeBackend extends MeshBackendBase {
     Object.keys(this.handlers)
       .forEach((subject : string) => {
         Object.keys(this.handlers[subject])
+          .filter((name : string) => !this.handlers[subject][name].registered)
           .forEach((name : string) => {
             this.handlers[subject][name].registered = true;
             const eventListener = async (data : EventData) => {
-              const result = await this.invokeHandler(data.payload);
-              //console.log(data.replySubject);
-              if (data.replySubject) {
-                eventEmitter.emit(data.replySubject, result);
-              }
+              // tslint:disable-next-line:no-any
+              await this.invokeHandler(data.payload, (error : MeshError, result : any) => {
+                if (data.replySubject) {
+                  eventEmitter.emit(data.replySubject, error ? error.serialize() : result);
+                }
+              });
             };
             eventListener.owner = this;
             // tslint:disable-next-line:no-any
@@ -117,7 +120,7 @@ class FakeBackend extends MeshBackendBase {
       if (broadcast) {
         eventName = `${envelope.header.subject}-${envelope.header.name}`;
       } else {
-        const subIdsForSub = instanceSubscriptionIds[process.env.JEST_WORKER_ID]
+        const subIdsForSub = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
           .filter((sub : string) => {
             return sub.startsWith(`${envelope.header.subject}-${envelope.header.name}`);
           });

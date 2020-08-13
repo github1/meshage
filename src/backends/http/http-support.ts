@@ -154,7 +154,7 @@ class HttpMeshBackend extends MeshBackendBase {
                   wait: req.query.wait === 'true' || req.query.wait === undefined,
                   timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10)
                 }, true);
-              HttpMeshBackend.prepareHttpResponse(result || [], res);
+              HttpMeshBackend.prepareHttpResponse(result, res);
             }
           } catch (err) {
             res.status(500)
@@ -188,10 +188,14 @@ class HttpMeshBackend extends MeshBackendBase {
       // tslint:disable-next-line:typedef
       await new Promise((resolve, reject) => {
         try {
-          this.server = this.app.listen(this.port, () => {
-            log(`Started http listener on ${this.port}`);
+          if (this.server) {
             resolve();
-          });
+          } else {
+            this.server = this.app.listen(this.port, () => {
+              log(`Started http listener on ${this.port}`);
+              resolve();
+            });
+          }
         } catch (err) {
           reject(err);
         }

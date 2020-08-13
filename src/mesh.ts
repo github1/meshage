@@ -1,4 +1,7 @@
 import {
+  PSEUDO_MESSAGE_AFTER,
+  PSEUDO_MESSAGE_BEFORE,
+  PSEUDO_MESSAGE_NS,
   Subject,
   SubjectBase
 } from './subject';
@@ -49,17 +52,76 @@ export interface MeshBackend {
 
 }
 
-// tslint:disable-next-line:no-unnecessary-class
-export class MeshTimeoutError {
+export interface MeshErrorSerializedCause {
+  message : string;
+  stack : string;
+}
+
+export interface MeshErrorSerialized {
+  ns : string;
+  // tslint:disable-next-line:no-reserved-keywords
+  type : string;
+  cause? : MeshErrorSerializedCause;
 }
 
 // tslint:disable-next-line:no-unnecessary-class
-export class MeshRegistrationTimeoutError {
+export class MeshError {
+  private static readonly MESH_ERROR_NAMESPACE : string = 'meshage.error';
+
+  // tslint:disable-next-line:no-any
+  readonly [key:string]: any;
+
+  // tslint:disable-next-line:no-any
+  public static IS_ERROR(value : any) : boolean {
+    // tslint:disable-next-line:no-unsafe-any
+    return value && value.ns && value.ns.startsWith(MeshError.MESH_ERROR_NAMESPACE);
+  }
+
+  public serialize() : MeshErrorSerialized {
+    return {ns: MeshError.MESH_ERROR_NAMESPACE, type: this.constructor.name};
+  }
 }
 
 // tslint:disable-next-line:no-unnecessary-class
-export class MeshInvocationError {
+export class MeshTimeoutError extends MeshError {
+}
+
+// tslint:disable-next-line:no-unnecessary-class
+export class MeshRegistrationTimeoutError extends MeshError {
+}
+
+// tslint:disable-next-line:no-unnecessary-class
+export class MeshDuplicateMessageError extends MeshError {
+}
+
+// tslint:disable-next-line:no-unnecessary-class
+export class MeshInvocationError extends MeshError {
   constructor(public readonly cause : Error) {
+    super();
+  }
+
+  public serialize() : MeshErrorSerialized {
+    return {
+      ...super.serialize(),
+      cause: {message: this.cause.message, stack: this.cause.stack}
+    };
+  }
+}
+
+export function deserializeMeshError(value : MeshErrorSerialized) : MeshError {
+  switch (value.type) {
+    case 'MeshError':
+      return new MeshError();
+    case 'MeshTimeoutError':
+      return new MeshTimeoutError();
+    case 'MeshRegistrationTimeoutError':
+      return new MeshRegistrationTimeoutError();
+    case 'MeshDuplicateMessageError':
+      return new MeshDuplicateMessageError();
+    case 'MeshInvocationError':
+      return new MeshInvocationError(value.cause as Error);
+    default:
+      return new MeshError();
   }
 }
 
@@ -131,8 +193,11 @@ export abstract class MeshBackendBase implements MeshBackend {
     let attempts = 300;
     const hasSubscription = () => this.allHandlers
       .filter((meshSubjectHandlerRegistration : MeshSubjectHandlerRegistration) => {
-        return meshSubjectHandlerRegistration.subject === subject && meshSubjectHandlerRegistration.registered;
-      }).length > 0;
+        return meshSubjectHandlerRegistration.subject === subject;
+      })
+      .reduce((isRegistered : boolean, meshSubjectHandlerRegistration : MeshSubjectHandlerRegistration) => {
+        return meshSubjectHandlerRegistration.registered && isRegistered;
+      }, true);
     while (attempts > 0 && !hasSubscription()) {
       if (hasSubscription()) {
         return;
@@ -141,7 +206,7 @@ export abstract class MeshBackendBase implements MeshBackend {
         if (attempts === 0) {
           throw new MeshRegistrationTimeoutError();
         } else {
-          await new Promise((resolve: () => void) => setTimeout(resolve, 100));
+          await new Promise((resolve : () => void) => setTimeout(resolve, 100));
         }
       }
     }
@@ -156,35 +221,13 @@ export abstract class MeshBackendBase implements MeshBackend {
       if (err) {
         throw err;
       }
-      const localLog : debug.Debugger = log.extend(`MeshPrivateBase.handler.${{
-        subject,
-        messageName: strName,
-        handler: messagePrivateBaseMessageHandler,
-        registered: false
-      }.subject}.${{
-        subject,
-        messageName: strName,
-        handler: messagePrivateBaseMessageHandler,
-        registered: false
-      }.messageName}`);
-      if (!this.lruCache) {
-        this.lruCache = new LRUCache({
-          max: 1000,
-          maxAge: 1000 * 60 * 3
-        });
-      }
-      if (this.lruCache.has(envelope.header.uid)) {
-        localLog('Received duplicate message %o', envelope.header);
-        return;
-      }
-      this.lruCache.set(envelope.header.uid, undefined);
       return handler(envelope.message, envelope.header);
     };
     this.handlers[subject][strName] = {
       subject,
       messageName: strName,
       handler: messagePrivateBaseMessageHandler,
-      registered: false
+      registered: strName.startsWith(PSEUDO_MESSAGE_NS)
     };
     setTimeout(async () => this.doRegistrations(), 1);
   }
@@ -234,14 +277,39 @@ export abstract class MeshBackendBase implements MeshBackend {
     return new Promise(async (resolve, reject) => {
       let responseTimeout : NodeJS.Timer;
       if (!broadcast && options.wait && options.timeout > 0) {
-        responseTimeout = setTimeout(() => { reject(new MeshTimeoutError()); }, options.timeout);
+        responseTimeout = setTimeout(() => {
+          reject(new MeshTimeoutError());
+        }, options.timeout);
       }
-      // tslint:disable-next-line:no-any no-unsafe-any
-      const response : T = await responsePromise;
-      if (responseTimeout) {
-        clearTimeout(responseTimeout);
-      }
-      resolve(response);
+      responsePromise
+        .then((response : T) => {
+          if (responseTimeout) {
+            clearTimeout(responseTimeout);
+          }
+          if (broadcast) {
+            // tslint:disable-next-line:no-any
+            const multiResponse : T[] = response as any as T[] || [];
+            // tslint:disable-next-line:no-any
+            resolve(multiResponse.map((item: any) => {
+              // tslint:disable-next-line:no-unsafe-any
+              return MeshError.IS_ERROR(item) ? deserializeMeshError(item) : item;
+              // tslint:disable-next-line:no-any
+            }) as any as T);
+          } else {
+            if (MeshError.IS_ERROR(response)) {
+              // tslint:disable-next-line:no-any
+              reject(deserializeMeshError(response as any));
+            } else {
+              resolve(response);
+            }
+          }
+        })
+        .catch((err : Error) => {
+          if (responseTimeout) {
+            clearTimeout(responseTimeout);
+          }
+          reject(err);
+        });
     });
   }
 
@@ -250,38 +318,61 @@ export abstract class MeshBackendBase implements MeshBackend {
   public abstract unregister(subject : string) : Promise<void>;
 
   protected abstract doSend<T>(address : string,
-                            envelope : SubjectMessageEnvelope,
-                            options : SubjectMessageOptions,
-                            // tslint:disable-next-line:no-any
-                            broadcast : boolean) : Promise<T>;
+                               envelope : SubjectMessageEnvelope,
+                               options : SubjectMessageOptions,
+                               // tslint:disable-next-line:no-any
+                               broadcast : boolean) : Promise<T>;
 
   protected abstract doRegistrations() : Promise<void>;
 
   // tslint:disable-next-line:no-any
-  protected async invokeHandler<T>(message : SubjectMessageEnvelope) : Promise<T> {
+  protected async invokeHandler<T>(message : SubjectMessageEnvelope,
+                                   callback? : (err? : MeshError, result? : T) => void) : Promise<T> {
     const localLog : debug.Debugger = log.extend(`MeshBackendBase.handler.${message.header.subject}.${message.header.name}`);
-    try {
-      // tslint:disable-next-line:no-any
+    if (!this.lruCache) {
+      this.lruCache = new LRUCache({
+        max: 1000,
+        maxAge: 1000 * 60 * 3
+      });
+    }
+    if (this.lruCache.has(message.header.uid)) {
+      localLog('Received duplicate message %o', message.header);
+      if (callback) {
+        callback(new MeshDuplicateMessageError(), undefined);
+        return undefined;
+      } else {
+        throw new MeshDuplicateMessageError();
+      }
+    } else {
+      this.lruCache.set(message.header.uid, undefined);
       let response : T;
+      let error : MeshInvocationError;
       try {
-        if (this.handlers[message.header.subject]['::before']) {
+        // tslint:disable-next-line:no-any
+        if (this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE]) {
           // tslint:disable-next-line:no-unsafe-any
-          response = await this.handlers[message.header.subject]['::before'].handler(undefined, message);
+          response = await this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE].handler(undefined, message);
         }
         if (response === undefined) {
           // tslint:disable-next-line:no-unsafe-any
           response = await this.handlers[message.header.subject][message.header.name].handler(undefined, message);
         }
-        return response;
+      } catch (err) {
+        localLog(`Error invoking handler - %o`, message, err);
+        error = new MeshInvocationError(err as Error);
+        if (!callback) {
+          throw error;
+        }
       } finally {
-        if (this.handlers[message.header.subject]['::after']) {
+        if (this.handlers[message.header.subject] && this.handlers[message.header.subject][PSEUDO_MESSAGE_AFTER]) {
           // tslint:disable-next-line:no-unsafe-any
-          await this.handlers[message.header.subject]['::after'].handler(undefined, message);
+          await this.handlers[message.header.subject][PSEUDO_MESSAGE_AFTER].handler(undefined, message);
         }
       }
-    } catch (err) {
-      localLog(`Error invoking handler - %o`, message, err);
-      throw new MeshInvocationError(err as Error);
+      if (callback) {
+        callback(error, response);
+      }
+      return response;
     }
   }
 }
@@ -296,7 +387,7 @@ export type MeshBackendProvided = MeshBackend | MeshBackendProvision;
 
 export type MeshBackendProvider = () => MeshBackendProvided;
 
-export function toMeshBackendProvision(provided : MeshBackendProvided): MeshBackendProvision {
+export function toMeshBackendProvision(provided : MeshBackendProvided) : MeshBackendProvision {
   let provision : MeshBackendProvision;
   // tslint:disable-next-line:no-any
   if ((provided as any).backend) {

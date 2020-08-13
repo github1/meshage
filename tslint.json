@@ -45,6 +45,7 @@
       "property-declaration",
       "member-variable-declaration"
     ],
-    "prefer-type-cast": false
+    "prefer-type-cast": false,
+    "import-name": false
   }
 }
