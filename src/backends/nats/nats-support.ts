@@ -86,9 +86,9 @@ class NatsMeshBackend extends MeshBackendBase {
     let natsSubjectToUse : string = address;
     if (!address) {
       if (broadcast) {
-        natsSubjectToUse = `${envelope.header.subject}-${envelope.header.name}-broadcast`;
+        natsSubjectToUse = `${envelope.header.subject}-broadcast`;
       } else {
-        natsSubjectToUse = `${envelope.header.subject}-${envelope.header.name}-queue-group`;
+        natsSubjectToUse = `${envelope.header.subject}-queue-group`;
       }
     }
     if (!options.wait) {
@@ -152,14 +152,16 @@ class NatsMeshBackend extends MeshBackendBase {
           }
         });
       };
-      await this.makeSubscription(`${registration.subject}-${registration.messageName}-broadcast`, msgCallback);
-      await this.makeSubscription(`${registration.subject}-${registration.messageName}-queue-group`, msgCallback, {queue: `${registration.subject}-qg`});
+      await this.makeSubscription(`${registration.subject}-broadcast`, msgCallback);
+      await this.makeSubscription(`${registration.subject}-queue-group`, msgCallback, {queue: `${registration.subject}-qg`});
       await this.makeSubscription(`${registration.subject}-${registration.messageName}-subid-${this.instanceId}`, msgCallback);
     }
   }
 
   private async makeSubscription(name : string, msgCallback : MsgCallback, opts? : SubscriptionOptions) {
-    this.subscriptions[name] = await this.natsConnection.subscribe(name, msgCallback, opts);
+    if (!this.subscriptions[name]) {
+      this.subscriptions[name] = await this.natsConnection.subscribe(name, msgCallback, opts);
+    }
   }
 
   private async initNatsConnection() : Promise<Client> {

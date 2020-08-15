@@ -84,7 +84,7 @@ class FakeBackend extends MeshBackendBase {
             };
             eventListener.owner = this;
             // tslint:disable-next-line:no-any
-            eventEmitter.on(`${subject}-${name}`, eventListener);
+            eventEmitter.on(`${subject}`, eventListener);
             eventEmitter.on(`${subject}-${name}-${this.instanceId}`, eventListener);
             instanceSubscriptionIds[process.env.JEST_WORKER_ID] = instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [];
             instanceSubscriptionIds[process.env.JEST_WORKER_ID].push(`${subject}-${name}-${this.instanceId}`);
@@ -106,15 +106,16 @@ class FakeBackend extends MeshBackendBase {
     let resPromise;
     let eventName = address;
     if (!eventName) {
-      if (broadcast) {
-        eventName = `${envelope.header.subject}-${envelope.header.name}`;
-      } else {
+      if (!broadcast) {
         const subIdsForSub = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
           .filter((sub : string) => {
             return sub.startsWith(`${envelope.header.subject}-${envelope.header.name}`);
           });
         // tslint:disable-next-line:insecure-random
         eventName = subIdsForSub[Math.floor(Math.random() * subIdsForSub.length)];
+      }
+      if (!eventName) {
+        eventName = `${envelope.header.subject}`;
       }
     }
     if (options.wait) {
