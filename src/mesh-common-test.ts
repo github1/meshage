@@ -13,7 +13,7 @@ class TestMessage {
 
 const instances : { [key : string] : Mesh[] } = {};
 
-export function testLog(msg: string) {
+export function testLog(msg : string) {
   if (process.env.TEST_LOG) {
     // tslint:disable-next-line:no-unsafe-any
     require('fs')
@@ -43,9 +43,9 @@ export async function shutdownAll(id? : string) {
 }
 
 // tslint:disable-next-line:no-any
-export function commonTests(description : string, meshFactory : (opts?: any) => Mesh,
+export function commonTests(description : string, meshFactory : (opts? : any) => Mesh,
                             // tslint:disable-next-line:no-any
-                            prepare? : (testId?: string) => Promise<any>,
+                            prepare? : (testId? : string) => Promise<any>,
                             // tslint:disable-next-line:no-any
                             cleanup? : (context : { m? : Mesh }) => Promise<any>) {
   describe(description, () => {
@@ -227,12 +227,19 @@ export function commonTests(description : string, meshFactory : (opts?: any) => 
         .awaitRegistration();
       expect(await context.m
         .subject('a')
-        .send({name: 'TestMessage', respondInBefore: true}))
+        .send({name: 'TestMessage', respondInBefore: true}, {timeout: 1000}))
         .toBe('before-handler');
       expect(await context.m
         .subject('a')
-        .send({name: 'TestMessage', respondInBefore: false}))
+        .send({name: 'TestMessage', respondInBefore: false}, {timeout: 1000}))
         .toBe('main-handler');
+      expect(await context.m
+        .subject('a')
+        .send({
+          name: 'AnotherTypeOfMessage',
+          respondInBefore: true
+        }, {timeout: 1000}))
+        .toBe('before-handler');
     }, 10000);
     it('a "after" handler is always called', async () => {
       let afterCalledTimes = 0;
