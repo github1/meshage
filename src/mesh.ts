@@ -24,7 +24,7 @@ const log : debug.Debugger = debug('meshage')
 export type MeshState = 'running' | 'stopping' | 'stopped';
 
 export interface Mesh {
-  status : MeshState;
+  readonly status : MeshState;
 
   subject(name : string) : Subject;
 
@@ -125,21 +125,12 @@ export function deserializeMeshError(value : MeshErrorSerialized) : MeshError {
   }
 }
 
-const meshes : MeshBase[] = [];
-
 export class MeshBase implements Mesh {
 
   // tslint:disable-next-line:variable-name
   protected _status : MeshState = 'running';
 
   constructor(private readonly meshPrivate : MeshBackend) {
-    meshes.push(this);
-  }
-
-  public static async SHUTDOWN_ALL() {
-    for (const mesh of meshes) {
-      await mesh.shutdown();
-    }
   }
 
   public get status() : MeshState {

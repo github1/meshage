@@ -20,20 +20,11 @@ export function fake() : MeshBackendProvider {
 }
 
 const instanceSubscriptionIds : { [key : string] : string[] } = {};
-const instances : { [key : string] : FakeBackend[] } = {};
-
-export function shutdownAll() {
-  return instances[process.env.JEST_WORKER_ID].forEach(async (instance : FakeBackend) => {
-    await instance.shutdown();
-  });
-}
 
 class FakeBackend extends MeshBackendBase {
 
   constructor() {
     super();
-    instances[process.env.JEST_WORKER_ID] = instances[process.env.JEST_WORKER_ID] || [];
-    instances[process.env.JEST_WORKER_ID].push(this);
   }
 
   public get subscriptionIds() : string[] {
@@ -43,8 +34,6 @@ class FakeBackend extends MeshBackendBase {
   public async shutdown() : Promise<void> {
     instanceSubscriptionIds[process.env.JEST_WORKER_ID] = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
       .filter((sub : string) => sub.indexOf(this.instanceId) < 0);
-    instances[process.env.JEST_WORKER_ID] = instances[process.env.JEST_WORKER_ID]
-      .filter((instance : FakeBackend) => instance !== this);
     this.handlers = {};
     eventEmitter
       .eventNames()

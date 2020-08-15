@@ -10,7 +10,7 @@
     "lint": "tslint --exclude '**/*test*.ts' --exclude '**/*fake*.ts' --project 'tsconfig.json'",
     "prepublishOnly": "npm run build && ./prepare.sh",
     "pretest": "npm run lint",
-    "test": "jest --coverage --runInBand",
+    "test": "jest --coverage --runInBand --forceExit",
     "test:watch": "node --inspect ./node_modules/.bin/jest --watch --runInBand",
     "build": "npm run -s clean && npm run -s lint && tsc -p tsconfig.release.json",
     "build:only": "npm run -s clean && tsc -p tsconfig.release.json"
@@ -39,6 +39,7 @@
     "@types/uuid": "8.0.1",
     "get-port": "5.1.1",
     "jest": "26.2.2",
+    "leaked-handles": "5.2.0",
     "node-docker-api": "1.1.22",
     "rimraf": "^2.6.1",
     "ts-jest": "26.1.4",

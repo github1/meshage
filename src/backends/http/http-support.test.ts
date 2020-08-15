@@ -4,7 +4,8 @@ import {
   SubjectMessageHeader
 } from '../../';
 import {http} from './http-support';
-import {fake, shutdownAll} from '../fake-backend';
+import {fake} from '../fake-backend';
+import {store, shutdownAll} from '../../mesh-common-test';
 import fetch, {Response} from 'node-fetch';
 // tslint:disable-next-line:no-implicit-dependencies
 import * as getPort from 'get-port';
@@ -14,7 +15,7 @@ describe('http-support', () => {
   let port : number;
   beforeEach(async () => {
     port = await getPort();
-    p1 = mesh(http(fake(), port));
+    p1 = store(mesh(http(fake(), port)));
   });
   afterEach(async () => {
     await shutdownAll();

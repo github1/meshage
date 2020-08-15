@@ -111,6 +111,11 @@ class HttpMeshBackend extends MeshBackendBase {
   }
 
   public async shutdown() : Promise<void> {
+    try {
+      await this.meshPrivateInternal.shutdown();
+    } catch (err) {
+      // ignore
+    }
     if (this.server) {
       try {
         // tslint:disable-next-line:typedef
@@ -127,7 +132,6 @@ class HttpMeshBackend extends MeshBackendBase {
         log(`Failed to close server on port ${this.port}`);
       }
     }
-    return this.meshPrivateInternal.shutdown();
   }
 
   public unregister(subject : string) : Promise<void> {
@@ -139,6 +143,12 @@ class HttpMeshBackend extends MeshBackendBase {
       this.app = express();
       this.app.use(bodyParser.json());
       this.app.use(bodyParser.urlencoded({extended: true}));
+      if (process.env.JEST_WORKER_ID) {
+        this.app.use((req : express.Request, res : express.Response, next : express.NextFunction) => {
+          res.set('Connection', 'close');
+          next();
+        });
+      }
       this.app.post('/api/broadcast/:subject',
         async (req : express.Request, res : express.Response) => {
           try {
