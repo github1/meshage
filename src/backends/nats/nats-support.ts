@@ -55,6 +55,7 @@ class NatsMeshBackend extends MeshBackendBase {
         localLog('Closing nats connection', this.instanceId);
         await this.natsConnection.drain();
         this.natsConnection.close();
+        this.natsConnection = undefined;
       } catch (err) {
         localLog('Failed to close nats connection', err);
       }
@@ -96,7 +97,7 @@ class NatsMeshBackend extends MeshBackendBase {
     }
     if (broadcast) {
       const replySubject = v4();
-      return new Promise<T>(async (resolve : (value : T) => void, reject : (error: Error) => void) => {
+      return new Promise<T>(async (resolve : (value : T) => void, reject : (error : Error) => void) => {
         const replies : T[] = [];
         const replySubscription = await this.natsConnection.subscribe(replySubject, (err : Error, msg : Msg) => {
           if (err) {
@@ -145,7 +146,7 @@ class NatsMeshBackend extends MeshBackendBase {
         // tslint:disable-next-line:no-unsafe-any
         const subjectMessageEnvelope : SubjectMessageEnvelope = JSON.parse(msg.data);
         // tslint:disable-next-line:no-any
-        await this.invokeHandler(subjectMessageEnvelope, (error : MeshError, result: any) => {
+        await this.invokeHandler(subjectMessageEnvelope, (error : MeshError, result : any) => {
           if (msg.reply) {
             this.natsConnection.publish(msg.reply, JSON.stringify(error ? error.serialize() : result));
           }
@@ -174,10 +175,10 @@ class NatsMeshBackend extends MeshBackendBase {
         if (attempts === 0) {
           throw err;
         } else {
-          await new Promise((resolve: () => void) => setTimeout(resolve, 500));
+          await new Promise((resolve : () => void) => setTimeout(resolve, 500));
         }
       }
-      this.register(SUBJECT_NATS_MONITOR, SUBJECT_MESSAGE_SUBSCRIPTIONS, (msg : { subscriptions: string[] }) => {
+      this.register(SUBJECT_NATS_MONITOR, SUBJECT_MESSAGE_SUBSCRIPTIONS, (msg : { subscriptions : string[] }) => {
         this.partitionSubscriptionIds = msg.subscriptions;
       });
     }
@@ -187,25 +188,37 @@ class NatsMeshBackend extends MeshBackendBase {
 }
 
 function reportSubscriptions(mesh : Mesh, monitorUrl : string) {
+  const localLog : debug.Debugger = log.extend('NatsMeshBackend.reportSubscriptions');
+  let errorCount : number = 0;
   const interval : NodeJS.Timer = setInterval(async () => {
     if (mesh.status !== 'running') {
       clearInterval(interval);
       return;
     }
-    type NatsSubscriptionInfo = { subscriptions_list: string[] };
-    type NatsMonitorInfo = { connections: NatsSubscriptionInfo[] };
-    // tslint:disable-next-line:no-unsafe-any
-    const subs : NatsMonitorInfo = await fetch(monitorUrl, {headers: {accept: 'application/json'}})
-      .then((res : Response) => res.json());
-    const subscriptions : string[] = subs.connections.reduce((nodeSubs : string[], conn : NatsSubscriptionInfo) => {
-      nodeSubs.push(...(conn.subscriptions_list || []).filter((sub : string) => /-subid-/.test(sub)));
-      return nodeSubs;
-    }, []);
-    await mesh.subject(SUBJECT_NATS_MONITOR)
-      .broadcast({
-        name: SUBJECT_MESSAGE_SUBSCRIPTIONS,
-        subscriptions
-      });
+    try {
+      type NatsSubscriptionInfo = { subscriptions_list : string[] };
+      type NatsMonitorInfo = { connections : NatsSubscriptionInfo[] };
+      // tslint:disable-next-line:no-unsafe-any
+      const subs : NatsMonitorInfo = await fetch(monitorUrl, {headers: {accept: 'application/json'}})
+        .then((res : Response) => res.json());
+      const subscriptions : string[] = subs.connections.reduce((nodeSubs : string[], conn : NatsSubscriptionInfo) => {
+        nodeSubs.push(...(conn.subscriptions_list || []).filter((sub : string) => /-subid-/.test(sub)));
+        return nodeSubs;
+      }, []);
+      await mesh.subject(SUBJECT_NATS_MONITOR)
+        .broadcast({
+          name: SUBJECT_MESSAGE_SUBSCRIPTIONS,
+          subscriptions
+        });
+    } catch (err) {
+      localLog('Failed to get subscriptions', err);
+      if (errorCount > 120) {
+        localLog('Terminating subscription poll', err);
+        clearInterval(interval);
+        return;
+      }
+      errorCount++;
+    }
   }, 1000);
 }
 

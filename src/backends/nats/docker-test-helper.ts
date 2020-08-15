@@ -4,19 +4,12 @@ import {Docker} from 'node-docker-api';
 import {execSync} from 'child_process';
 import * as getPort from 'get-port';
 
-const testId = process.env.JEST_WORKER_ID;
 const testIdCounter = {};
 const testContainers = {};
 const testContainerPorts = {};
 let fetchedImage = false;
 
 const docker : Docker = new Docker({socketPath: '/var/run/docker.sock'});
-
-process.on('SIGINT', () => {
-  stopContainersByName([].concat.apply([], Object.keys(testContainers)
-    .map((testId : string) => testContainers[testId])));
-  process.exit(0);
-});
 
 function promisifyStream(stream) {
   return new Promise((resolve, reject) => {
@@ -26,7 +19,7 @@ function promisifyStream(stream) {
   });
 }
 
-function stopContainersByName(...names : string[]) {
+export function stopContainersByName(...names : string[]) {
   for (const name of names) {
     execSync(`bash -c "docker ps | grep ${name} | awk '{print \\$1}' | xargs -I{} docker stop {}"`);
     execSync(`bash -c "docker ps -a | grep ${name} | awk '{print \\$1}' | xargs -I{} docker rm {}"`);
@@ -34,10 +27,10 @@ function stopContainersByName(...names : string[]) {
 }
 
 // tslint:disable-next-line:no-any
-export async function startContainer(image : string, tag : string, ...ports : string[]) : Promise<any> {
+export async function startContainer(testId : string, image : string, tag : string, ...ports : string[]) : Promise<any> {
   testIdCounter[testId] = (testIdCounter[testId] || 0);
   testIdCounter[testId]++;
-  const containerName = [image, tag, testId, testIdCounter[testId]].join('-')
+  const containerName = ['jest-test-container', image, tag, testId, testIdCounter[testId]].join('-')
     .replace(/[^a-z0-9]+/g, '-');
   testContainers[testId] = testContainers[testId] || [];
   testContainers[testId].push(containerName);
@@ -46,7 +39,7 @@ export async function startContainer(image : string, tag : string, ...ports : st
   try {
     const containerStatus = await container.status();
     console.log('Found existing container', containerStatus);
-    await stopContainers();
+    await stopContainersByName(testId);
   } catch (err) {
     // ignore
   }
@@ -81,8 +74,4 @@ export async function startContainer(image : string, tag : string, ...ports : st
     // ignore
   }
   return testContainerPorts[containerName];
-}
-
-export function stopContainers() {
-  stopContainersByName(...testContainers[testId]);
 }

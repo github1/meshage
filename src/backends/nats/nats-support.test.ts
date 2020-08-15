@@ -1,32 +1,35 @@
+// tslint:disable:no-any
 import {
   mesh,
-  Mesh,
-  MeshBase
+  Mesh
 } from '../../';
 import {nats} from './nats-support';
 import {
   startContainer,
-  stopContainers
+  stopContainersByName
 } from './docker-test-helper';
-import {commonTests} from '../../mesh-common-test';
+import {
+  commonTests,
+  shutdownAll,
+  store
+} from '../../mesh-common-test';
+import {v4} from 'uuid';
 
 describe('nats-support', () => {
   let ports;
-  beforeAll(async () => {
-    ports = await startContainer('nats', 'alpine3.11', '4222/tcp', '8222/tcp');
+  let testId;
+  beforeEach(async () => {
+    testId = v4();
+    ports = await startContainer(testId, 'nats', 'alpine3.11', '4222/tcp', '8222/tcp');
   }, 10000);
-  afterAll(async () => {
-    await stopContainers();
-  });
-  commonTests(() => mesh(nats(`nats://localhost:${ports['4222']}`)), async () => {
-    ports = await startContainer('nats', 'alpine3.11', '4222/tcp', '8222/tcp');
-  }, async () => {
-    await MeshBase.SHUTDOWN_ALL();
+  afterEach(async () => {
+    await stopContainersByName(testId);
+    await shutdownAll(testId);
   });
   it('can broadcast messages and receive all replies', async () => {
-    const p1 : Mesh = mesh(nats(`nats://localhost:${ports['4222']}`));
+    const p1 : Mesh = store(mesh(nats(`nats://localhost:${ports['4222']}`)), testId);
     for (let i = 0; i < 3; i++) {
-      await mesh(nats(`nats://localhost:${ports['4222']}`))
+      await store(mesh(nats(`nats://localhost:${ports['4222']}`)), testId)
         .subject('test-sub-0')
         // tslint:disable-next-line:no-any
         .on('echo', (msg : any) => ({echo: msg}))
@@ -40,9 +43,9 @@ describe('nats-support', () => {
       .toEqual({echo: {name: 'echo'}});
   }, 10000);
   it('can send messages to a member of a queue group', async () => {
-    const p1 : Mesh = mesh(nats(`nats://localhost:${ports['4222']}`));
+    const p1 : Mesh = store(mesh(nats(`nats://localhost:${ports['4222']}`)), testId);
     for (let i = 0; i < 3; i++) {
-      await mesh(nats(`nats://localhost:${ports['4222']}`))
+      await store(mesh(nats(`nats://localhost:${ports['4222']}`)), testId)
         .subject('test-sub-1')
         // tslint:disable-next-line:no-any
         .on('echo', (msg : any) => ({echo: msg}))
@@ -55,12 +58,12 @@ describe('nats-support', () => {
       .toBe('echo');
   }, 10000);
   it('can send messages partitioned', async () => {
-    const p1 : Mesh = mesh(nats({
+    const p1 : Mesh = store(mesh(nats({
       servers: [`nats://localhost:${ports['4222']}`],
       monitorUrl: `http://localhost:${ports['8222']}/connz?subs=1`
-    }));
+    })), testId);
     for (let i = 0; i < 3; i++) {
-      await mesh(nats(`nats://localhost:${ports['4222']}`))
+      await store(mesh(nats(`nats://localhost:${ports['4222']}`)), testId)
         .subject('test-sub-1')
         // tslint:disable-next-line:no-any
         .on('echo', (msg : any) => ({from: i, echo: msg}))
@@ -84,3 +87,9 @@ describe('nats-support', () => {
     }
   }, 10000);
 });
+
+commonTests('nats-support-common',
+  ({ports: commonTestPorts} : any) => mesh(nats(`nats://localhost:${commonTestPorts['4222']}`)),
+  async (testId: string) => {
+    return {ports: await startContainer(testId,'nats', 'alpine3.11', '4222/tcp', '8222/tcp')};
+  });

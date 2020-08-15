@@ -1,6 +1,7 @@
 module.exports = {
   verbose: true,
   testEnvironment: 'node',
+  globalSetup: './jestGlobalSetup.js',
   transform: {
     "^.+\\.ts$": 'ts-jest'
   },
