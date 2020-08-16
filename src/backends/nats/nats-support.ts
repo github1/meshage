@@ -24,7 +24,7 @@ const log : debug.Debugger = debug('meshage')
   .extend('nats');
 
 const SUBJECT_NATS_MONITOR = '::nats-monitor';
-const SUBJECT_MESSAGE_SUBSCRIPTIONS = 'subscriptions';
+const SUBJECT_NATS_MONITOR_SUBSCRIPTIONS_MESSAGE_NAME = 'subscriptions';
 
 export interface NatsBackendConfig {
   servers : string[];
@@ -35,7 +35,9 @@ class NatsMeshBackend extends MeshBackendBase {
 
   private natsConnection : Client;
   private readonly subscriptions : { [stream : string] : Subscription } = {};
+  private hasReceivedSubscriptionIds : boolean = false;
   private partitionSubscriptionIds : string[] = [];
+  private readonly registeredSubjects : string[] = [];
 
   constructor(private readonly natsServers : string[]) {
     super();
@@ -45,7 +47,8 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   public get subscriptionIds() : string[] {
-    return this.partitionSubscriptionIds;
+    return [...new Set([...this.partitionSubscriptionIds, ...Object.keys(this.subscriptions)
+      .filter((subscriptionId : string) => subscriptionId.includes(this.instanceId))])];
   }
 
   public async shutdown() : Promise<void> {
@@ -71,6 +74,12 @@ class NatsMeshBackend extends MeshBackendBase {
       .filter((subscriptionSubject : string) => subscriptionSubject.indexOf(`${subject}-`) === 0)) {
       localLog(`Draining subject ${subscriptionSubject}`);
       await this.subscriptions[subscriptionSubject].drain();
+      // tslint:disable-next-line:no-dynamic-delete
+      delete this.subscriptions[subscriptionSubject];
+      const index = this.registeredSubjects.indexOf(subject);
+      if (index > -1) {
+        this.registeredSubjects.splice(index, 1);
+      }
       localLog(`Unregistered subject ${subscriptionSubject}`);
     }
   }
@@ -82,6 +91,13 @@ class NatsMeshBackend extends MeshBackendBase {
                             broadcast : boolean) : Promise<T> {
     const localLog : debug.Debugger = log.extend('NatsMeshBackend.send');
     localLog('Sending to %s', envelope);
+    if (this.hasReceivedSubscriptionIds) {
+      // has received subscription information from other nodes
+      if (this.subscriptionIds.filter((s: string) => s.indexOf(`${envelope.header.subject}-`) === 0).length === 0) {
+        // and there are no known subscriptions for this subject
+        return (broadcast ? [] : undefined) as unknown as T;
+      }
+    }
     await this.initNatsConnection();
     let natsSubjectToUse : string = address;
     if (!address) {
@@ -135,26 +151,35 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   protected async doRegistrations() : Promise<void> {
-    await this.initNatsConnection();
-    const toRegister : MeshSubjectHandlerRegistration[] = this.allHandlers
-      .filter((registration : MeshSubjectHandlerRegistration) => {
-        return !registration.registered;
-      });
-    for (const registration of toRegister) {
-      registration.registered = true;
-      const msgCallback : MsgCallback = async (err : NatsError | null, msg : Msg) => {
-        // tslint:disable-next-line:no-unsafe-any
-        const subjectMessageEnvelope : SubjectMessageEnvelope = JSON.parse(msg.data);
-        // tslint:disable-next-line:no-any
-        await this.invokeHandler(subjectMessageEnvelope, (error : MeshError, result : any) => {
-          if (msg.reply) {
-            this.natsConnection.publish(msg.reply, JSON.stringify(error ? error.serialize() : result));
-          }
+    const localLog = log.extend('NatsBackend.doRegistrations');
+    try {
+      await this.initNatsConnection();
+      const toRegister : MeshSubjectHandlerRegistration[] = this.allHandlers
+        .filter((registration : MeshSubjectHandlerRegistration) => {
+          return !registration.registered;
         });
-      };
-      await this.makeSubscription(`${registration.subject}-broadcast`, msgCallback);
-      await this.makeSubscription(`${registration.subject}-queue-group`, msgCallback, {queue: `${registration.subject}-qg`});
-      await this.makeSubscription(`${registration.subject}-${registration.messageName}-subid-${this.instanceId}`, msgCallback);
+      for (const registration of toRegister) {
+        registration.registered = true;
+        const msgCallback : MsgCallback = async (err : NatsError | null, msg : Msg) => {
+          // tslint:disable-next-line:no-unsafe-any
+          const subjectMessageEnvelope : SubjectMessageEnvelope = JSON.parse(msg.data);
+          // tslint:disable-next-line:no-any
+          await this.invokeHandler(subjectMessageEnvelope, (error : MeshError, result : any) => {
+            if (msg.reply) {
+              this.natsConnection.publish(msg.reply, JSON.stringify(error ? error.serialize() : result));
+            }
+          });
+        };
+        if (!this.registeredSubjects.includes(registration.subject)) {
+          this.registeredSubjects.push(registration.subject);
+          // Should only be subscribed once per subject
+          await this.makeSubscription(`${registration.subject}-broadcast`, msgCallback);
+          await this.makeSubscription(`${registration.subject}-queue-group`, msgCallback, {queue: `${registration.subject}-qg`});
+        }
+        await this.makeSubscription(`${registration.subject}-${registration.messageName}-subid-${this.instanceId}`, msgCallback);
+      }
+    } catch (err) {
+      localLog('Error creating subscriptions', err);
     }
   }
 
@@ -180,8 +205,9 @@ class NatsMeshBackend extends MeshBackendBase {
           await new Promise((resolve : () => void) => setTimeout(resolve, 500));
         }
       }
-      this.register(SUBJECT_NATS_MONITOR, SUBJECT_MESSAGE_SUBSCRIPTIONS, (msg : { subscriptions : string[] }) => {
+      this.register(SUBJECT_NATS_MONITOR, SUBJECT_NATS_MONITOR_SUBSCRIPTIONS_MESSAGE_NAME, (msg : { subscriptions : string[] }) => {
         this.partitionSubscriptionIds = msg.subscriptions;
+        this.hasReceivedSubscriptionIds = true;
       });
     }
     return this.natsConnection;
@@ -209,7 +235,7 @@ function reportSubscriptions(mesh : Mesh, monitorUrl : string) {
       }, []);
       await mesh.subject(SUBJECT_NATS_MONITOR)
         .broadcast({
-          name: SUBJECT_MESSAGE_SUBSCRIPTIONS,
+          name: SUBJECT_NATS_MONITOR_SUBSCRIPTIONS_MESSAGE_NAME,
           subscriptions
         });
     } catch (err) {

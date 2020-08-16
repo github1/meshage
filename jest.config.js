@@ -17,6 +17,9 @@ module.exports = {
     'src/**/*.ts',
     '!src/**/*.d.ts'
   ],
+  coveragePathIgnorePatterns : [
+    ".*(test-helper|common-test).*"
+  ],
   globals: {
     'ts-jest': {
       diagnostics: {

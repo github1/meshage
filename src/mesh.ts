@@ -1,7 +1,6 @@
 import {
   PSEUDO_MESSAGE_AFTER,
   PSEUDO_MESSAGE_BEFORE,
-  PSEUDO_MESSAGE_NS,
   Subject,
   SubjectBase
 } from './subject';
@@ -62,23 +61,92 @@ export interface MeshErrorSerialized {
   // tslint:disable-next-line:no-reserved-keywords
   type : string;
   cause? : MeshErrorSerializedCause;
+  // tslint:disable-next-line:no-any
+  header? : any;
 }
 
 // tslint:disable-next-line:no-unnecessary-class
-export class MeshError {
-  private static readonly MESH_ERROR_NAMESPACE : string = 'meshage.error';
+export class MeshSignal {
+  public static readonly MESH_SIGNAL_NAMESPACE : string = 'meshage.signal';
+  public static readonly MESH_ERROR_NAMESPACE : string = 'meshage.error';
 
   // tslint:disable-next-line:no-any
-  readonly [key:string]: any;
+  readonly [key : string] : any;
 
   // tslint:disable-next-line:no-any
-  public static IS_ERROR(value : any) : boolean {
+  constructor(protected readonly namespace : string = MeshSignal.MESH_SIGNAL_NAMESPACE, details : { [key : string] : any } = {}) {
+    if (details) {
+      // @ts-ignore
+      this.details = details;
+    }
+  }
+
+  // tslint:disable-next-line:no-any
+  public static PROCESS_RESPONSE_SYNC(response : any, forBroadcast : boolean) {
+    // tslint:disable-next-line:no-unnecessary-initializer
+    let ret = undefined;
+    // tslint:disable-next-line:no-any
+    MeshSignal.PROCESS_RESPONSE(response, forBroadcast, (value : any) => {
+      ret = value;
+      // tslint:disable-next-line:no-any
+    }, (value : any) => {
+      ret = value;
+    });
+    return ret;
+  }
+
+  // tslint:disable-next-line:no-any no-empty
+  public static PROCESS_RESPONSE(response : any,
+                                 forBroadcast : boolean,
+                                 // tslint:disable-next-line:no-any
+                                 resolve : (value : any) => void,
+                                 // tslint:disable-next-line:no-any no-empty
+                                 reject : (value : any) => void = () => {
+                                 }) {
+    let meshSymbolOrError = MeshSignal.isSignal(response) || MeshSignal.isSignal(response, MeshSignal.MESH_ERROR_NAMESPACE)
+      // tslint:disable-next-line:no-unsafe-any
+      ? deserializeMeshErrorOrSignal(response)
+      : undefined;
+    if (response instanceof MeshSignal) {
+      meshSymbolOrError = response;
+    }
+    if (meshSymbolOrError) {
+      if (forBroadcast) {
+        meshSymbolOrError.processResponseMatchForBroadcast(resolve, reject);
+      } else {
+        meshSymbolOrError.processResponseMatch(resolve, reject);
+      }
+    } else {
+      resolve(response);
+    }
+  }
+
+  // tslint:disable-next-line:no-any
+  private static isSignal(value : any, namespace? : string) : boolean {
     // tslint:disable-next-line:no-unsafe-any
-    return value && value.ns && value.ns.startsWith(MeshError.MESH_ERROR_NAMESPACE);
+    return value && value.ns && value.ns.startsWith(namespace || MeshSignal.MESH_SIGNAL_NAMESPACE);
   }
 
   public serialize() : MeshErrorSerialized {
-    return {ns: MeshError.MESH_ERROR_NAMESPACE, type: this.constructor.name};
+    return {ns: this.namespace, type: this.constructor.name};
+  }
+
+  // tslint:disable-next-line:no-any
+  protected processResponseMatch(resolve : (value : any) => void, reject : (value : any) => void) {
+    reject(this);
+  }
+
+  // tslint:disable-next-line:no-any
+  protected processResponseMatchForBroadcast(resolve : (value : any) => void, reject : (value : any) => void) {
+    resolve(this);
+  }
+}
+
+// tslint:disable-next-line:no-unnecessary-class
+export class MeshError extends MeshSignal {
+  // tslint:disable-next-line:no-any
+  constructor(details : { [key : string] : any } = {}) {
+    super(MeshSignal.MESH_ERROR_NAMESPACE, details);
   }
 }
 
@@ -92,6 +160,16 @@ export class MeshRegistrationTimeoutError extends MeshError {
 
 // tslint:disable-next-line:no-unnecessary-class
 export class MeshDuplicateMessageError extends MeshError {
+  constructor(public readonly header : SubjectMessageHeader) {
+    super();
+  }
+
+  public serialize() : MeshErrorSerialized {
+    return {
+      ...super.serialize(),
+      header: this.header
+    };
+  }
 }
 
 // tslint:disable-next-line:no-unnecessary-class
@@ -108,7 +186,22 @@ export class MeshInvocationError extends MeshError {
   }
 }
 
-export function deserializeMeshError(value : MeshErrorSerialized) : MeshError {
+// tslint:disable-next-line:no-unnecessary-class
+export class MeshVoidResponse extends MeshSignal {
+  // tslint:disable-next-line:no-any
+  protected processResponseMatch(resolve : (value : any) => void, reject : (value : any) => void) {
+    resolve(undefined);
+  }
+
+  // tslint:disable-next-line:no-any
+  protected processResponseMatchForBroadcast(resolve : (value : any) => void, reject : (value : any) => void) {
+    resolve(undefined);
+  }
+}
+
+const MESH_VOID_RESPONSE = new MeshVoidResponse();
+
+export function deserializeMeshErrorOrSignal(value : MeshErrorSerialized) : MeshError {
   switch (value.type) {
     case 'MeshError':
       return new MeshError();
@@ -117,11 +210,13 @@ export function deserializeMeshError(value : MeshErrorSerialized) : MeshError {
     case 'MeshRegistrationTimeoutError':
       return new MeshRegistrationTimeoutError();
     case 'MeshDuplicateMessageError':
-      return new MeshDuplicateMessageError();
+      return new MeshDuplicateMessageError(value.header as SubjectMessageHeader);
     case 'MeshInvocationError':
       return new MeshInvocationError(value.cause as Error);
+    case 'MeshVoidResponse':
+      return new MeshVoidResponse();
     default:
-      return new MeshError();
+      return value.ns === MeshSignal.MESH_ERROR_NAMESPACE ? new MeshError() : new MeshSignal(value.ns, value);
   }
 }
 
@@ -218,7 +313,7 @@ export abstract class MeshBackendBase implements MeshBackend {
       subject,
       messageName: strName,
       handler: messagePrivateBaseMessageHandler,
-      registered: strName.startsWith(PSEUDO_MESSAGE_NS)
+      registered: false
     };
     setTimeout(async () => this.doRegistrations(), 1);
   }
@@ -245,7 +340,8 @@ export abstract class MeshBackendBase implements MeshBackend {
     if (options.wait === undefined) {
       options.wait = true;
     }
-    let responsePromise : Promise<T>;
+    // tslint:disable-next-line:no-any
+    let responsePromise : Promise<T> = Promise.resolve(MESH_VOID_RESPONSE as any as T);
     if (partitionKey && !broadcast) {
       const candidateSubscriptionIds : string[] = this.subscriptionIds
         .filter((subscriptionId : string) => {
@@ -257,7 +353,6 @@ export abstract class MeshBackendBase implements MeshBackend {
           // the subscriptionId here is the backends subscription id, not the logical subject name
           responsePromise = this.doSend(subscriptionId, messageEnvelope, options, false);
         } else {
-          // the subscriptionId is local
           responsePromise = this.invokeHandler(messageEnvelope);
         }
       }
@@ -279,20 +374,18 @@ export abstract class MeshBackendBase implements MeshBackend {
           }
           if (broadcast) {
             // tslint:disable-next-line:no-any
-            const multiResponse : T[] = response as any as T[] || [];
+            const multiResponse : T[] = (Array.isArray(response) ? response : [response]) as any as T[] || [];
             // tslint:disable-next-line:no-any
-            resolve(multiResponse.map((item: any) => {
-              // tslint:disable-next-line:no-unsafe-any
-              return MeshError.IS_ERROR(item) ? deserializeMeshError(item) : item;
+            resolve(multiResponse.map((item : any) => {
+              return MeshSignal.PROCESS_RESPONSE_SYNC(item, true);
+            })
               // tslint:disable-next-line:no-any
-            }) as any as T);
+              .filter((item : any) => {
+                return item;
+                // tslint:disable-next-line:no-any
+              }) as any as T);
           } else {
-            if (MeshError.IS_ERROR(response)) {
-              // tslint:disable-next-line:no-any
-              reject(deserializeMeshError(response as any));
-            } else {
-              resolve(response);
-            }
+            MeshSignal.PROCESS_RESPONSE(response, false, resolve, reject);
           }
         })
         .catch((err : Error) => {
@@ -329,22 +422,22 @@ export abstract class MeshBackendBase implements MeshBackend {
     if (this.lruCache.has(message.header.uid)) {
       localLog('Received duplicate message %o', message.header);
       if (callback) {
-        callback(new MeshDuplicateMessageError(), undefined);
+        callback(new MeshDuplicateMessageError(message.header), undefined);
         return undefined;
       } else {
-        throw new MeshDuplicateMessageError();
+        throw new MeshDuplicateMessageError(message.header);
       }
     } else {
       this.lruCache.set(message.header.uid, undefined);
       let response : T;
-      let error : MeshInvocationError;
+      let error : MeshSignal;
       try {
         // tslint:disable-next-line:no-any
         if (this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE]) {
           // tslint:disable-next-line:no-unsafe-any
           response = await this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE].handler(undefined, message);
         }
-        if (response === undefined) {
+        if (response === undefined && this.handlers[message.header.subject][message.header.name]) {
           // tslint:disable-next-line:no-unsafe-any
           response = await this.handlers[message.header.subject][message.header.name].handler(undefined, message);
         }
@@ -359,6 +452,9 @@ export abstract class MeshBackendBase implements MeshBackend {
           // tslint:disable-next-line:no-unsafe-any
           await this.handlers[message.header.subject][PSEUDO_MESSAGE_AFTER].handler(undefined, message);
         }
+      }
+      if (!response && !error) {
+        error = MESH_VOID_RESPONSE;
       }
       if (callback) {
         callback(error, response);

@@ -9,16 +9,19 @@ import {store, shutdownAll} from '../../mesh-common-test';
 import fetch, {Response} from 'node-fetch';
 // tslint:disable-next-line:no-implicit-dependencies
 import * as getPort from 'get-port';
+import {v4} from 'uuid';
 
 describe('http-support', () => {
+  let testId : string;
   let p1 : Mesh;
   let port : number;
   beforeEach(async () => {
+    testId = v4();
     port = await getPort();
-    p1 = store(mesh(http(fake(), port)));
+    p1 = store(mesh(http(fake(testId), port)), testId);
   });
   afterEach(async () => {
-    await shutdownAll();
+    await shutdownAll(testId);
   });
   it('can send messages over http', async () => {
     await p1.subject('test-sub-2')

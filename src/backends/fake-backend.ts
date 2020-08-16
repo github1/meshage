@@ -15,24 +15,27 @@ interface EventData {
   payload : SubjectMessageEnvelope;
 }
 
-export function fake() : MeshBackendProvider {
-  return () => new FakeBackend();
+export function fake(id?: string) : MeshBackendProvider {
+  return () => new FakeBackend(id);
 }
 
 const instanceSubscriptionIds : { [key : string] : string[] } = {};
 
 class FakeBackend extends MeshBackendBase {
 
-  constructor() {
+  private readonly registeredSubjects : string[] = [];
+
+  constructor(private readonly id? : string) {
     super();
+    this.id = this.id || process.env.JEST_WORKER_ID;
   }
 
   public get subscriptionIds() : string[] {
-    return instanceSubscriptionIds[process.env.JEST_WORKER_ID];
+    return instanceSubscriptionIds[this.id] || [];
   }
 
   public async shutdown() : Promise<void> {
-    instanceSubscriptionIds[process.env.JEST_WORKER_ID] = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
+    instanceSubscriptionIds[this.id] = (instanceSubscriptionIds[this.id] || [])
       .filter((sub : string) => sub.indexOf(this.instanceId) < 0);
     this.handlers = {};
     eventEmitter
@@ -49,7 +52,7 @@ class FakeBackend extends MeshBackendBase {
   }
 
   public unregister(subject : string) : Promise<void> {
-    instanceSubscriptionIds[process.env.JEST_WORKER_ID] = instanceSubscriptionIds[process.env.JEST_WORKER_ID]
+    instanceSubscriptionIds[this.id] = instanceSubscriptionIds[this.id]
       .filter((sub : string) => sub.startsWith(`${subject}-`) && sub.indexOf(this.instanceId) > -1);
     eventEmitter
       .eventNames()
@@ -64,6 +67,10 @@ class FakeBackend extends MeshBackendBase {
       });
     // tslint:disable-next-line:no-dynamic-delete
     delete this.handlers[subject];
+    const index = this.registeredSubjects.indexOf(subject);
+    if (index > -1) {
+      this.registeredSubjects.splice(index, 1);
+    }
     return Promise.resolve(undefined);
   }
 
@@ -83,11 +90,14 @@ class FakeBackend extends MeshBackendBase {
               });
             };
             eventListener.owner = this;
-            // tslint:disable-next-line:no-any
-            eventEmitter.on(`${subject}`, eventListener);
+            if (!this.registeredSubjects.includes(subject)) {
+              this.registeredSubjects.push(subject);
+              // tslint:disable-next-line:no-any
+              eventEmitter.on(`${subject}`, eventListener);
+            }
             eventEmitter.on(`${subject}-${name}-${this.instanceId}`, eventListener);
-            instanceSubscriptionIds[process.env.JEST_WORKER_ID] = instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [];
-            instanceSubscriptionIds[process.env.JEST_WORKER_ID].push(`${subject}-${name}-${this.instanceId}`);
+            instanceSubscriptionIds[this.id] = instanceSubscriptionIds[this.id] || [];
+            instanceSubscriptionIds[this.id].push(`${subject}-${name}-${this.instanceId}`);
           });
       });
     return Promise.resolve();
@@ -103,11 +113,14 @@ class FakeBackend extends MeshBackendBase {
       replySubject,
       payload: envelope
     };
+    if (this.subscriptionIds.filter((s : string) => s.indexOf(`${envelope.header.subject}-`) === 0).length === 0) {
+      return Promise.resolve(broadcast ? [] : undefined);
+    }
     let resPromise;
     let eventName = address;
     if (!eventName) {
       if (!broadcast) {
-        const subIdsForSub = (instanceSubscriptionIds[process.env.JEST_WORKER_ID] || [])
+        const subIdsForSub = (instanceSubscriptionIds[this.id] || [])
           .filter((sub : string) => {
             return sub.startsWith(`${envelope.header.subject}-${envelope.header.name}`);
           });
