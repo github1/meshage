@@ -82,11 +82,11 @@ export class MeshSignal {
   }
 
   // tslint:disable-next-line:no-any
-  public static PROCESS_RESPONSE_SYNC(response : any, forBroadcast : boolean) {
+  public static PROCESS_RESPONSE_SYNC(response : any, forBroadcast : boolean, keepSignals : boolean) {
     // tslint:disable-next-line:no-unnecessary-initializer
     let ret = undefined;
     // tslint:disable-next-line:no-any
-    MeshSignal.PROCESS_RESPONSE(response, forBroadcast, (value : any) => {
+    MeshSignal.PROCESS_RESPONSE(response, forBroadcast, keepSignals, (value : any) => {
       ret = value;
       // tslint:disable-next-line:no-any
     }, (value : any) => {
@@ -98,6 +98,7 @@ export class MeshSignal {
   // tslint:disable-next-line:no-any no-empty
   public static PROCESS_RESPONSE(response : any,
                                  forBroadcast : boolean,
+                                 keepSignals : boolean,
                                  // tslint:disable-next-line:no-any
                                  resolve : (value : any) => void,
                                  // tslint:disable-next-line:no-any no-empty
@@ -111,10 +112,14 @@ export class MeshSignal {
       meshSymbolOrError = response;
     }
     if (meshSymbolOrError) {
-      if (forBroadcast) {
-        meshSymbolOrError.processResponseMatchForBroadcast(resolve, reject);
+      if (!keepSignals || MeshSignal.isSignal(meshSymbolOrError, MeshSignal.MESH_ERROR_NAMESPACE)) {
+        if (forBroadcast) {
+          meshSymbolOrError.processResponseMatchForBroadcast(resolve, reject);
+        } else {
+          meshSymbolOrError.processResponseMatch(resolve, reject);
+        }
       } else {
-        meshSymbolOrError.processResponseMatch(resolve, reject);
+        resolve(meshSymbolOrError);
       }
     } else {
       resolve(response);
@@ -377,7 +382,7 @@ export abstract class MeshBackendBase implements MeshBackend {
             const multiResponse : T[] = (Array.isArray(response) ? response : [response]) as any as T[] || [];
             // tslint:disable-next-line:no-any
             resolve(multiResponse.map((item : any) => {
-              return MeshSignal.PROCESS_RESPONSE_SYNC(item, true);
+              return MeshSignal.PROCESS_RESPONSE_SYNC(item, true, options.keepSignals);
             })
               // tslint:disable-next-line:no-any
               .filter((item : any) => {
@@ -385,7 +390,7 @@ export abstract class MeshBackendBase implements MeshBackend {
                 // tslint:disable-next-line:no-any
               }) as any as T);
           } else {
-            MeshSignal.PROCESS_RESPONSE(response, false, resolve, reject);
+            MeshSignal.PROCESS_RESPONSE(response, false, options.keepSignals, resolve, reject);
           }
         })
         .catch((err : Error) => {

@@ -10,6 +10,7 @@ export interface SubjectMessage {
 export interface SubjectMessageOptions {
   timeout?: number;
   wait?: boolean;
+  keepSignals?: boolean;
 }
 
 export interface SubjectMessageHeader {

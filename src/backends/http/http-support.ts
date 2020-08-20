@@ -4,6 +4,7 @@ import {
   MeshBackendBase,
   MeshBackendProvider,
   MeshBackendProvision,
+  MeshVoidResponse,
   SubjectMessageEnvelope,
   SubjectMessageOptions,
   toMeshBackendProvision
@@ -99,6 +100,9 @@ class HttpMeshBackend extends MeshBackendBase {
         body = resultToSend.http.body;
       }
     }
+    if (result instanceof MeshVoidResponse) {
+      status = 404;
+    }
     log.extend('prepareHttpResponse')('Sending %o', body);
     // tslint:disable-next-line:no-unsafe-any
     delete resultToSend.http;
@@ -185,7 +189,8 @@ class HttpMeshBackend extends MeshBackendBase {
                 httpMessage,
                 {
                   wait: req.query.wait === 'true' || req.query.wait === undefined,
-                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10)
+                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10),
+                  keepSignals: true
                 },
                 false);
               HttpMeshBackend.prepareHttpResponse(result, res);

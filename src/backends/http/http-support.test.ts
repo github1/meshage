@@ -5,7 +5,10 @@ import {
 } from '../../';
 import {http} from './http-support';
 import {fake} from '../fake-backend';
-import {store, shutdownAll} from '../../mesh-common-test';
+import {
+  shutdownAll,
+  store
+} from '../../mesh-common-test';
 import fetch, {Response} from 'node-fetch';
 // tslint:disable-next-line:no-implicit-dependencies
 import * as getPort from 'get-port';
@@ -41,6 +44,34 @@ describe('http-support', () => {
     const resJson = await res.json();
     expect(resJson.echo.name)
       .toBe('test-http');
+  });
+  it('returns status 404 if there are no handlers', async () => {
+    await p1.subject('test-sub-2')
+      // tslint:disable-next-line:no-any
+      .on('test-http', (msg : any) => {
+        return {echo: msg};
+      })
+      .awaitRegistration();
+    let res : Response = await fetch(`http://localhost:${port}/api/no-sub/123`,
+      {
+        headers: {
+          'content-type': 'application/json'
+        },
+        method: 'post',
+        body: JSON.stringify({name: 'test-http'})
+      });
+    expect(res.status)
+      .toBe(404);
+    res = await fetch(`http://localhost:${port}/api/broadcast/no-sub`,
+      {
+        headers: {
+          'content-type': 'application/json'
+        },
+        method: 'post',
+        body: JSON.stringify({name: 'test-http'})
+      });
+    expect(await (res.json()))
+      .toEqual([]);
   });
   it('can send the message name as a query param', async () => {
     await p1.subject('test-sub-2')
@@ -107,7 +138,7 @@ describe('http-support', () => {
     await p1.subject('test-sub-2')
       // tslint:disable-next-line:no-any
       .on('some-val', (msg : any, header : SubjectMessageHeader) => {
-        return { name: header.name, pk: header.partitionKey };
+        return {name: header.name, pk: header.partitionKey};
       })
       .awaitRegistration();
     const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/{body.key}-123?messageName={body.something}`,
