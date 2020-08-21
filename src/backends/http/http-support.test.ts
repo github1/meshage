@@ -1,3 +1,5 @@
+// tslint:disable:no-any
+
 import {
   mesh,
   Mesh,
@@ -29,21 +31,47 @@ describe('http-support', () => {
   it('can send messages over http', async () => {
     await p1.subject('test-sub-2')
       // tslint:disable-next-line:no-any
-      .on('test-http', (msg : any) => {
-        return {echo: msg};
+      .on('test-http', (msg : any, header : SubjectMessageHeader) => {
+        return {
+          echo: {
+            msg,
+            header
+          }
+        };
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: JSON.stringify({name: 'test-http'})
-      });
+    const res : Response = await sendHttp(`${port}/api/test-sub-2/123`, {name: 'test-http'});
+    expect(res.status)
+      .toBe(200);
     const resJson = await res.json();
-    expect(resJson.echo.name)
+    expect(resJson.echo.msg.name)
       .toBe('test-http');
+    expect(resJson.echo.header.http.headers['content-type'])
+      .toBe('application/json');
+    const resDirect : any = await p1.subject('test-sub-2')
+      .send({name:'test-http'});
+    expect(resDirect.echo.msg.name)
+      .toBe('test-http');
+  });
+  it('can set the http response status in the handler', async () => {
+    await p1.subject('test-sub-2')
+      // tslint:disable-next-line:no-any
+      .on('test-http', () => {
+        return {
+          http: {
+            status: 202,
+            headers: {
+              'x-something': 'foo'
+            }
+          }
+        };
+      })
+      .awaitRegistration();
+    const res : Response = await sendHttp(`${port}/api/test-sub-2/123`, {name: 'test-http'});
+    expect(res.status)
+      .toBe(202);
+    expect(res.headers.get('x-something'))
+      .toBe('foo');
   });
   it('returns status 404 if there are no handlers', async () => {
     await p1.subject('test-sub-2')
@@ -52,14 +80,7 @@ describe('http-support', () => {
         return {echo: msg};
       })
       .awaitRegistration();
-    let res : Response = await fetch(`http://localhost:${port}/api/no-sub/123`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: JSON.stringify({name: 'test-http'})
-      });
+    let res : Response = await sendHttp(`${port}/api/no-sub/123`, {name: 'test-http'});
     expect(res.status)
       .toBe(404);
     res = await fetch(`http://localhost:${port}/api/broadcast/no-sub`,
@@ -80,14 +101,7 @@ describe('http-support', () => {
         return {echo: msg};
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123?messageName=test-http`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: '{}'
-      });
+    const res : Response = await sendHttp(`${port}/api/test-sub-2/123?messageName=test-http`, {});
     const resJson = await res.json();
     expect(resJson.echo.name)
       .toBe('test-http');
@@ -99,14 +113,7 @@ describe('http-support', () => {
         return {echo: msg};
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/broadcast/test-sub-2?messageName=test-http`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: '{}'
-      });
+    const res : Response = await sendHttp(`${port}/api/broadcast/test-sub-2?messageName=test-http`, {});
     const resJson = await res.json();
     expect(resJson.length)
       .toBe(1);
@@ -120,14 +127,7 @@ describe('http-support', () => {
         return {echo: msg};
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/broadcast/test-sub-2?messageName=test-http&wait=false`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: '{}'
-      });
+    const res : Response = await sendHttp(`${port}/api/broadcast/test-sub-2?messageName=test-http&wait=false`, {});
     const resJson = await res.json();
     expect(resJson.length)
       .toBe(0);
@@ -141,14 +141,10 @@ describe('http-support', () => {
         return {name: header.name, pk: header.partitionKey};
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/{body.key}-123?messageName={body.something}`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: JSON.stringify({key: 'abc', something: 'some-val'})
-      });
+    const res : Response = await sendHttp(`${port}/api/test-sub-2/{body.key}-123?messageName={body.something}`, {
+      key: 'abc',
+      something: 'some-val'
+    });
     const resJson = await res.json();
     expect(resJson.name)
       .toBe('some-val');
@@ -162,15 +158,19 @@ describe('http-support', () => {
         return {echo: msg};
       })
       .awaitRegistration();
-    const res : Response = await fetch(`http://localhost:${port}/api/test-sub-2/123`,
-      {
-        headers: {
-          'content-type': 'application/json'
-        },
-        method: 'post',
-        body: '{}'
-      });
+    const res : Response = await sendHttp(`${port}/api/test-sub-2/123`, {});
     expect(res.status)
       .toBe(400);
   });
 });
+
+function sendHttp(path : string, body : any) {
+  return fetch(`http://localhost:${path}`,
+    {
+      headers: {
+        'content-type': 'application/json'
+      },
+      method: 'post',
+      body: JSON.stringify(body)
+    });
+}

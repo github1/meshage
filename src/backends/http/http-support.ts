@@ -1,10 +1,11 @@
 import {
-  HttpMessage,
+  HttpMessageHeader,
   MeshBackend,
   MeshBackendBase,
   MeshBackendProvider,
   MeshBackendProvision,
   MeshVoidResponse,
+  SubjectMessage,
   SubjectMessageEnvelope,
   SubjectMessageOptions,
   toMeshBackendProvision
@@ -18,6 +19,11 @@ import * as normalizeUrl from 'normalize-url';
 
 const log : debug.Debugger = debug('meshage')
   .extend('http');
+
+interface PreparedHttpMessage {
+  message: SubjectMessage;
+  headerData: HttpMessageHeader;
+}
 
 class HttpMeshBackend extends MeshBackendBase {
 
@@ -43,7 +49,7 @@ class HttpMeshBackend extends MeshBackendBase {
       }, {});
   }
 
-  private static prepareHttpMessage<T>(req : express.Request) : HttpMessage<T> {
+  private static prepareHttpMessage<T>(req : express.Request) : PreparedHttpMessage {
     // tslint:disable-next-line:no-any
     let reqUrl : string;
     if (process.env.PUBLIC_URL) {
@@ -65,9 +71,8 @@ class HttpMeshBackend extends MeshBackendBase {
     // tslint:disable-next-line:no-unsafe-any
     const messageName : string = query.messageName ? `${query.messageName}` : req.body.name;
     return {
-      name: messageName,
-      payload: {...req.body},
-      http: {
+      message: {...req.body, name: messageName},
+      headerData: {
         headers: req.headers,
         url: req.url,
         publicUrl: reqUrl,
@@ -90,7 +95,7 @@ class HttpMeshBackend extends MeshBackendBase {
         status = resultToSend.http.status;
       }
       // tslint:disable-next-line:no-unsafe-any
-      if (resultToSend.http.header) {
+      if (resultToSend.http.headers) {
         // tslint:disable-next-line:no-unsafe-any
         res.set(resultToSend.http.headers);
       }
@@ -156,17 +161,18 @@ class HttpMeshBackend extends MeshBackendBase {
       this.app.post('/api/broadcast/:subject',
         async (req : express.Request, res : express.Response) => {
           try {
-            const httpMessage = HttpMeshBackend.prepareHttpMessage(req);
-            if (!httpMessage.name) {
+            const httpMessage : PreparedHttpMessage = HttpMeshBackend.prepareHttpMessage(req);
+            if (!httpMessage.message.name) {
               res.status(400)
                 .send({error: 'Missing message name'});
             } else {
-              const result = await this.send(httpMessage.http.params.subject,
+              const result = await this.send(httpMessage.headerData.params.subject,
                 undefined,
-                httpMessage,
+                httpMessage.message,
                 {
                   wait: req.query.wait === 'true' || req.query.wait === undefined,
-                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10)
+                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10),
+                  additionalHeaderData: {http: httpMessage.headerData}
                 }, true);
               HttpMeshBackend.prepareHttpResponse(result, res);
             }
@@ -178,19 +184,20 @@ class HttpMeshBackend extends MeshBackendBase {
       this.app.post('/api/:subject/:partitionKey?',
         async (req : express.Request, res : express.Response) => {
           try {
-            const httpMessage = HttpMeshBackend.prepareHttpMessage(req);
-            if (!httpMessage.name) {
+            const httpMessage : PreparedHttpMessage = HttpMeshBackend.prepareHttpMessage(req);
+            if (!httpMessage.message.name) {
               res.status(400)
                 .send({error: 'Missing message name'});
             } else {
               const result = await this.send(
-                httpMessage.http.params.subject,
-                httpMessage.http.params.partitionKey,
-                httpMessage,
+                httpMessage.headerData.params.subject,
+                httpMessage.headerData.params.partitionKey,
+                httpMessage.message,
                 {
                   wait: req.query.wait === 'true' || req.query.wait === undefined,
                   timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10),
-                  keepSignals: true
+                  keepSignals: true,
+                  additionalHeaderData: {http: httpMessage.headerData}
                 },
                 false);
               HttpMeshBackend.prepareHttpResponse(result, res);
