@@ -417,8 +417,7 @@ export abstract class MeshBackendBase implements MeshBackend {
   // tslint:disable-next-line:no-any
   protected async invokeHandler<T>(message : SubjectMessageEnvelope,
                                    callback? : (err? : MeshError, result? : T) => void) : Promise<T> {
-    const localLog : debug.Debugger = log.extend(`MeshBackendBase.handler.${message.header.subject}.${message.header.name}`);
-    localLog.extend('debug')('Invoking handler for %o', message);
+    const localLog : debug.Debugger = log.extend(`invokeHandler.${message.header.subject}.${message.header.name}`);
     if (!this.lruCache) {
       this.lruCache = new LRUCache({
         max: 1000,
@@ -440,10 +439,12 @@ export abstract class MeshBackendBase implements MeshBackend {
       try {
         // tslint:disable-next-line:no-any
         if (this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE]) {
+          localLog.extend('debug')('before -> %o', message);
           // tslint:disable-next-line:no-unsafe-any
           response = await this.handlers[message.header.subject][PSEUDO_MESSAGE_BEFORE].handler(undefined, message);
         }
         if (response === undefined && this.handlers[message.header.subject][message.header.name]) {
+          localLog.extend('debug')('%o', message);
           // tslint:disable-next-line:no-unsafe-any
           response = await this.handlers[message.header.subject][message.header.name].handler(undefined, message);
         }
@@ -455,6 +456,7 @@ export abstract class MeshBackendBase implements MeshBackend {
         }
       } finally {
         if (this.handlers[message.header.subject] && this.handlers[message.header.subject][PSEUDO_MESSAGE_AFTER]) {
+          localLog.extend('debug')('after -> %o', message);
           // tslint:disable-next-line:no-unsafe-any
           await this.handlers[message.header.subject][PSEUDO_MESSAGE_AFTER].handler(undefined, message);
         }
