@@ -52,7 +52,7 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   public async shutdown() : Promise<void> {
-    const localLog : debug.Debugger = log.extend('NatsMeshBackend.shutdown');
+    const localLog : debug.Debugger = log.extend('shutdown');
     if (this.natsConnection) {
       try {
         localLog('Closing nats connection', this.instanceId);
@@ -66,7 +66,7 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   public async unregister(subject : string) : Promise<void> {
-    const localLog : debug.Debugger = log.extend('NatsMeshBackend.unregister');
+    const localLog : debug.Debugger = log.extend('unregister');
     // tslint:disable-next-line:no-dynamic-delete
     delete this.handlers[subject];
     for (const subscriptionSubject of Object
@@ -89,8 +89,8 @@ class NatsMeshBackend extends MeshBackendBase {
                             envelope : SubjectMessageEnvelope,
                             options : SubjectMessageOptions,
                             broadcast : boolean) : Promise<T> {
-    const localLog : debug.Debugger = log.extend('NatsMeshBackend.send');
-    localLog('Sending to %s', envelope);
+    const localLog : debug.Debugger = log.extend('send');
+    localLog('Sending to %o', envelope);
     if (this.hasReceivedSubscriptionIds) {
       // has received subscription information from other nodes
       if (this.subscriptionIds.filter((s: string) => s.indexOf(`${envelope.header.subject}-`) === 0).length === 0) {
@@ -151,7 +151,7 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   protected async doRegistrations() : Promise<void> {
-    const localLog = log.extend('NatsBackend.doRegistrations');
+    const localLog = log.extend('doRegistrations');
     try {
       await this.initNatsConnection();
       const toRegister : MeshSubjectHandlerRegistration[] = this.allHandlers
@@ -190,7 +190,7 @@ class NatsMeshBackend extends MeshBackendBase {
   }
 
   private async initNatsConnection() : Promise<Client> {
-    const localLog : debug.Debugger = log.extend('NatsMeshBackend.initNatsConnection');
+    const localLog : debug.Debugger = log.extend('initNatsConnection');
     let attempts = 100;
     while (!this.natsConnection && attempts > 0) {
       try {
@@ -216,7 +216,7 @@ class NatsMeshBackend extends MeshBackendBase {
 }
 
 function reportSubscriptions(mesh : Mesh, monitorUrl : string) {
-  const localLog : debug.Debugger = log.extend('NatsMeshBackend.reportSubscriptions');
+  const localLog : debug.Debugger = log.extend('reportSubscriptions');
   let errorCount : number = 0;
   const interval : NodeJS.Timer = setInterval(async () => {
     if (mesh.status !== 'running') {

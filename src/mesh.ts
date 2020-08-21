@@ -418,6 +418,7 @@ export abstract class MeshBackendBase implements MeshBackend {
   protected async invokeHandler<T>(message : SubjectMessageEnvelope,
                                    callback? : (err? : MeshError, result? : T) => void) : Promise<T> {
     const localLog : debug.Debugger = log.extend(`MeshBackendBase.handler.${message.header.subject}.${message.header.name}`);
+    localLog.extend('debug')('Invoking handler for %o', message);
     if (!this.lruCache) {
       this.lruCache = new LRUCache({
         max: 1000,
