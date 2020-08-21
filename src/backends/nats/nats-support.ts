@@ -89,8 +89,8 @@ class NatsMeshBackend extends MeshBackendBase {
                             envelope : SubjectMessageEnvelope,
                             options : SubjectMessageOptions,
                             broadcast : boolean) : Promise<T> {
-    const localLog : debug.Debugger = log.extend('send');
-    localLog('Sending to %o', envelope);
+    const localLog : debug.Debugger = log.extend(`send.${envelope.header.subject}.${envelope.header.name}`);
+    localLog('%o', envelope);
     if (this.hasReceivedSubscriptionIds) {
       // has received subscription information from other nodes
       if (this.subscriptionIds.filter((s: string) => s.indexOf(`${envelope.header.subject}-`) === 0).length === 0) {
