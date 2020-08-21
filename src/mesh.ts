@@ -331,12 +331,13 @@ export abstract class MeshBackendBase implements MeshBackend {
                        broadcast : boolean) : Promise<T> {
     // tslint:disable-next-line:no-parameter-reassignment
     options = options || {};
+    options.additionalHeaderData = options.additionalHeaderData || {};
     const messageHeader : SubjectMessageHeader = {
       ...options.additionalHeaderData,
       uid: v4(),
       subject,
       // tslint:disable-next-line:no-unsafe-any
-      name: message.name || message.constructor.name,
+      name: options.additionalHeaderData.name || message.name || message.constructor.name,
       partitionKey
     };
     const messageEnvelope : SubjectMessageEnvelope = {

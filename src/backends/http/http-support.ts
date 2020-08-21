@@ -1,5 +1,4 @@
 import {
-  HttpMessageHeader,
   MeshBackend,
   MeshBackendBase,
   MeshBackendProvider,
@@ -7,6 +6,7 @@ import {
   MeshVoidResponse,
   SubjectMessage,
   SubjectMessageEnvelope,
+  SubjectMessageHeader,
   SubjectMessageOptions,
   toMeshBackendProvision
 } from '../../';
@@ -21,8 +21,8 @@ const log : debug.Debugger = debug('meshage')
   .extend('http');
 
 interface PreparedHttpMessage {
-  message: SubjectMessage;
-  headerData: HttpMessageHeader;
+  message : SubjectMessage;
+  headerData : SubjectMessageHeader;
 }
 
 class HttpMeshBackend extends MeshBackendBase {
@@ -71,13 +71,19 @@ class HttpMeshBackend extends MeshBackendBase {
     // tslint:disable-next-line:no-unsafe-any
     const messageName : string = query.messageName ? `${query.messageName}` : req.body.name;
     return {
-      message: {...req.body, name: messageName},
+      message: {...req.body},
       headerData: {
-        headers: req.headers,
-        url: req.url,
-        publicUrl: reqUrl,
-        params,
-        query
+        uid: '', // replaced later,
+        subject: params.subject,
+        partitionKey: params.partitionKey || query.partitionKey,
+        name: messageName,
+        http: {
+          headers: req.headers,
+          url: req.url,
+          publicUrl: reqUrl,
+          params,
+          query
+        }
       }
     };
   }
@@ -162,17 +168,17 @@ class HttpMeshBackend extends MeshBackendBase {
         async (req : express.Request, res : express.Response) => {
           try {
             const httpMessage : PreparedHttpMessage = HttpMeshBackend.prepareHttpMessage(req);
-            if (!httpMessage.message.name) {
+            if (!httpMessage.headerData.name) {
               res.status(400)
                 .send({error: 'Missing message name'});
             } else {
-              const result = await this.send(httpMessage.headerData.params.subject,
+              const result = await this.send(httpMessage.headerData.subject,
                 undefined,
                 httpMessage.message,
                 {
-                  wait: req.query.wait === 'true' || req.query.wait === undefined,
-                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10),
-                  additionalHeaderData: {http: httpMessage.headerData}
+                  wait: httpMessage.headerData.http.query.wait === 'true' || httpMessage.headerData.http.query.wait === undefined,
+                  timeout: httpMessage.headerData.http.query.timeout === undefined ? undefined : parseInt(`${httpMessage.headerData.http.query.timeout}`, 10),
+                  additionalHeaderData: httpMessage.headerData
                 }, true);
               HttpMeshBackend.prepareHttpResponse(result, res);
             }
@@ -185,19 +191,19 @@ class HttpMeshBackend extends MeshBackendBase {
         async (req : express.Request, res : express.Response) => {
           try {
             const httpMessage : PreparedHttpMessage = HttpMeshBackend.prepareHttpMessage(req);
-            if (!httpMessage.message.name) {
+            if (!httpMessage.headerData.name) {
               res.status(400)
                 .send({error: 'Missing message name'});
             } else {
               const result = await this.send(
-                httpMessage.headerData.params.subject,
-                httpMessage.headerData.params.partitionKey,
+                httpMessage.headerData.subject,
+                httpMessage.headerData.partitionKey,
                 httpMessage.message,
                 {
-                  wait: req.query.wait === 'true' || req.query.wait === undefined,
-                  timeout: req.query.timeout === undefined ? undefined : parseInt(`${req.query.timeout}`, 10),
+                  wait: httpMessage.headerData.http.query.wait === 'true' || httpMessage.headerData.http.query.wait === undefined,
+                  timeout: httpMessage.headerData.http.query.timeout === undefined ? undefined : parseInt(`${httpMessage.headerData.http.query.timeout}`, 10),
                   keepSignals: true,
-                  additionalHeaderData: {http: httpMessage.headerData}
+                  additionalHeaderData: httpMessage.headerData
                 },
                 false);
               HttpMeshBackend.prepareHttpResponse(result, res);

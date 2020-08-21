@@ -97,13 +97,13 @@ describe('http-support', () => {
   it('can send the message name as a query param', async () => {
     await p1.subject('test-sub-2')
       // tslint:disable-next-line:no-any
-      .on('test-http', (msg : any) => {
-        return {echo: msg};
+      .on('test-http', (msg : any, header : SubjectMessageHeader) => {
+        return {echo: msg, name: header.name};
       })
       .awaitRegistration();
     const res : Response = await sendHttp(`${port}/api/test-sub-2/123?messageName=test-http`, {});
     const resJson = await res.json();
-    expect(resJson.echo.name)
+    expect(resJson.name)
       .toBe('test-http');
   });
   it('can broadcast messages', async () => {
