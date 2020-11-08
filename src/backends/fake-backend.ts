@@ -90,7 +90,7 @@ class FakeBackend extends MeshBackendBase {
               });
             };
             eventListener.owner = this;
-            if (!this.registeredSubjects.includes(subject)) {
+            if (this.registeredSubjects.indexOf(subject) < 0) {
               this.registeredSubjects.push(subject);
               // tslint:disable-next-line:no-any
               eventEmitter.on(`${subject}`, eventListener);

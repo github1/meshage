@@ -1,0 +1,11 @@
+*.iml
+*.log
+*.swp
+.DS_Store
+.eslintcache
+.idea/
+.patches
+coverage/
+dist/
+node_modules/
+tmp/
