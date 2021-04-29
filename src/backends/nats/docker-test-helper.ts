@@ -10,7 +10,7 @@ const testContainerPorts = {};
 let fetchedImage = false;
 
 const docker : Docker = new Docker(process.env.CI === 'true'
-  ? {host: 'http://0.0.0.0:2375'}
+  ? {protocol: 'http', host: 'localhost', port: '2375'}
   : {socketPath: '/var/run/docker.sock'});
 
 function promisifyStream(stream) {
