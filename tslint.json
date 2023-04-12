@@ -1,7 +1,4 @@
 {
-  "extends": [
-    "tslint-microsoft-contrib"
-  ],
   "rules": {
     "linebreak-style": [
       true,
