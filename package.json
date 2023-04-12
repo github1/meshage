@@ -1,6 +1,6 @@
 {
   "name": "meshage",
-  "version": "0.4.45",
+  "version": "0.4.46",
   "description": "A simple service mesh. Messages sent within the service mesh can be consistently partitioned across members of the cluster.",
   "main": "./index.js",
   "types": "./index.d.ts",

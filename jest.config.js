@@ -3,28 +3,19 @@ module.exports = {
   testEnvironment: 'node',
   globalSetup: './jestGlobalSetup.js',
   transform: {
-    "^.+\\.ts$": 'ts-jest'
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        diagnostics: {
+          warnOnly: true,
+        },
+      },
+    ],
   },
   roots: ['<rootDir>/src'],
-  moduleFileExtensions: [
-    'ts',
-    'js',
-    'node'
-  ],
+  moduleFileExtensions: ['ts', 'js', 'node'],
   testRegex: process.env.TEST_REGEX || '.*\\.test\\.ts$',
   coverageDirectory: 'coverage',
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts'
-  ],
-  coveragePathIgnorePatterns : [
-    ".*(test-helper|common-test).*"
-  ],
-  globals: {
-    'ts-jest': {
-      diagnostics: {
-        warnOnly: true
-      }
-    }
-  }
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+  coveragePathIgnorePatterns: ['.*(test-helper|common-test).*'],
 };
